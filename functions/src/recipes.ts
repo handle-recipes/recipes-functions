@@ -1,5 +1,4 @@
 import { onRequest } from "firebase-functions/v2/https";
-import { setGlobalOptions } from "firebase-functions/v2";
 import * as admin from "firebase-admin";
 import { z } from "zod";
 import { generateEmbedding } from "./embedding";
@@ -12,8 +11,6 @@ import {
   setAuditFields,
   createEmbeddingField,
 } from "./utils";
-
-setGlobalOptions({ region: "europe-west1" });
 
 // const storage = new Storage(); // Unused for now
 

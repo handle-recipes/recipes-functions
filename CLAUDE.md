@@ -49,7 +49,7 @@ Copy `src/types.ts` in this repo. Fields as agreed (see viewer CLAUDE.md).
 - `src/lib/validators.ts`
 
 # Scripts
-- `build`, `serve`, `lint`, `deploy`
+- `build`, `serve`, `deploy`
 
 # Acceptance
 - Writes only via these functions; audit & slug & embedding rules enforced.

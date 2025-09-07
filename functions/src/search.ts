@@ -1,11 +1,8 @@
 import { onRequest } from "firebase-functions/v2/https";
-import { setGlobalOptions } from "firebase-functions/v2";
 import { z } from "zod";
 import { generateEmbedding } from "./embedding";
 import { Recipe } from "./types";
 import { db, validateGroupId } from "./utils";
-
-setGlobalOptions({ region: "europe-west1" });
 
 const SearchRecipesSchema = z.object({
   query: z.string().min(1),
