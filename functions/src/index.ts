@@ -1,4 +1,4 @@
-import * as admin from 'firebase-admin';
+import * as admin from "firebase-admin";
 
 admin.initializeApp();
 
@@ -8,7 +8,7 @@ export {
   ingredientsDelete,
   ingredientsGet,
   ingredientsList,
-} from './ingredients';
+} from "./ingredients";
 
 export {
   recipesCreate,
@@ -16,9 +16,9 @@ export {
   recipesDelete,
   recipesGet,
   recipesList,
-} from './recipes';
+} from "./recipes";
 
 export {
   recipesSearch,
   recipesSemanticSearch,
-} from './search';
+} from "./search";

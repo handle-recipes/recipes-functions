@@ -1,11 +1,11 @@
-import { onRequest } from 'firebase-functions/v2/https';
-import { setGlobalOptions } from 'firebase-functions/v2';
-import { z } from 'zod';
-import { generateEmbedding } from './embedding';
-import { Recipe } from './types';
-import { db, validateGroupId } from './utils';
+import {onRequest} from "firebase-functions/v2/https";
+import {setGlobalOptions} from "firebase-functions/v2";
+import {z} from "zod";
+import {generateEmbedding} from "./embedding";
+import {Recipe} from "./types";
+import {db, validateGroupId} from "./utils";
 
-setGlobalOptions({ region: 'europe-west1' });
+setGlobalOptions({region: "europe-west1"});
 
 
 const SearchRecipesSchema = z.object({
@@ -22,64 +22,63 @@ const SemanticSearchSchema = z.object({
 });
 
 
-
 export const recipesSearch = onRequest(
-  { 
-    invoker: 'private',
-    memory: '1GiB',
-    timeoutSeconds: 60 
+  {
+    invoker: "private",
+    memory: "1GiB",
+    timeoutSeconds: 60,
   },
   async (req, res) => {
     try {
-      if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
+      if (req.method !== "POST") {
+        return res.status(405).json({error: "Method not allowed"});
       }
 
       const groupId = validateGroupId(req);
       const data = SearchRecipesSchema.parse(req.body);
 
-      let query = db.collection('recipes')
-        .where('createdByGroupId', '==', groupId)
-        .where('isArchived', '==', false);
+      const query = db.collection("recipes")
+        .where("createdByGroupId", "==", groupId)
+        .where("isArchived", "==", false);
 
       // Text search on name and description
-      const searchTerms = data.query.toLowerCase().split(' ');
-      
+      const searchTerms = data.query.toLowerCase().split(" ");
+
       const snapshot = await query.get();
-      let recipes = snapshot.docs.map(doc => ({
+      let recipes = snapshot.docs.map((doc) => ({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
       })) as (Recipe & { id: string })[];
 
       // Filter by text search
-      recipes = recipes.filter(recipe => {
+      recipes = recipes.filter((recipe) => {
         const searchText = `${recipe.name} ${recipe.description}`.toLowerCase();
-        return searchTerms.some(term => searchText.includes(term));
+        return searchTerms.some((term) => searchText.includes(term));
       });
 
       // Filter by ingredients if provided
       if (data.ingredients && data.ingredients.length > 0) {
-        recipes = recipes.filter(recipe => 
-          data.ingredients!.some(ingredientId =>
-            recipe.ingredients.some(ri => ri.ingredientId === ingredientId)
+        recipes = recipes.filter((recipe) =>
+          data.ingredients!.some((ingredientId) =>
+            recipe.ingredients.some((ri) => ri.ingredientId === ingredientId)
           )
         );
       }
 
       // Filter by tags if provided
       if (data.tags && data.tags.length > 0) {
-        recipes = recipes.filter(recipe => 
-          data.tags!.some(tag => 
-            recipe.tags.some(recipeTag => recipeTag.toLowerCase().includes(tag.toLowerCase()))
+        recipes = recipes.filter((recipe) =>
+          data.tags!.some((tag) =>
+            recipe.tags.some((recipeTag) => recipeTag.toLowerCase().includes(tag.toLowerCase()))
           )
         );
       }
 
       // Filter by categories if provided
       if (data.categories && data.categories.length > 0) {
-        recipes = recipes.filter(recipe => 
-          data.categories!.some(category => 
-            recipe.categories.some(recipeCategory => 
+        recipes = recipes.filter((recipe) =>
+          data.categories!.some((category) =>
+            recipe.categories.some((recipeCategory) =>
               recipeCategory.toLowerCase().includes(category.toLowerCase())
             )
           )
@@ -105,25 +104,25 @@ export const recipesSearch = onRequest(
       res.json({
         recipes,
         totalFound: recipes.length,
-        query: data.query
+        query: data.query,
       });
     } catch (error: any) {
-      console.error('Error searching recipes:', error);
-      res.status(400).json({ error: error.message });
+      console.error("Error searching recipes:", error);
+      res.status(400).json({error: error.message});
     }
   }
 );
 
 export const recipesSemanticSearch = onRequest(
-  { 
-    invoker: 'private',
-    memory: '2GiB',
-    timeoutSeconds: 120 
+  {
+    invoker: "private",
+    memory: "2GiB",
+    timeoutSeconds: 120,
   },
   async (req, res) => {
     try {
-      if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
+      if (req.method !== "POST") {
+        return res.status(405).json({error: "Method not allowed"});
       }
 
       const groupId = validateGroupId(req);
@@ -134,30 +133,30 @@ export const recipesSemanticSearch = onRequest(
 
       // Use Firestore vector search for semantic similarity
       // Note: This requires setting up vector index in Firestore
-      const vectorQuery = db.collection('recipes')
-        .where('createdByGroupId', '==', groupId)
-        .where('isArchived', '==', false)
+      const vectorQuery = db.collection("recipes")
+        .where("createdByGroupId", "==", groupId)
+        .where("isArchived", "==", false)
         .findNearest({
-          vectorField: 'embedding',
+          vectorField: "embedding",
           queryVector: queryEmbedding,
           limit: data.topK,
-          distanceMeasure: 'COSINE'
+          distanceMeasure: "COSINE",
         });
 
       const snapshot = await vectorQuery.get();
-      const recipes = snapshot.docs.map(doc => ({
+      const recipes = snapshot.docs.map((doc) => ({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
       })) as (Recipe & { id: string })[];
 
       res.json({
         recipes,
         query: data.query,
-        topK: data.topK
+        topK: data.topK,
       });
     } catch (error: any) {
-      console.error('Error in semantic search:', error);
-      res.status(400).json({ error: error.message });
+      console.error("Error in semantic search:", error);
+      res.status(400).json({error: error.message});
     }
   }
 );
