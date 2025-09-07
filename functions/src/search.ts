@@ -1,12 +1,11 @@
-import {onRequest} from "firebase-functions/v2/https";
-import {setGlobalOptions} from "firebase-functions/v2";
-import {z} from "zod";
-import {generateEmbedding} from "./embedding";
-import {Recipe} from "./types";
-import {db, validateGroupId} from "./utils";
+import { onRequest } from "firebase-functions/v2/https";
+import { setGlobalOptions } from "firebase-functions/v2";
+import { z } from "zod";
+import { generateEmbedding } from "./embedding";
+import { Recipe } from "./types";
+import { db, validateGroupId } from "./utils";
 
-setGlobalOptions({region: "europe-west1"});
-
+setGlobalOptions({ region: "europe-west1" });
 
 const SearchRecipesSchema = z.object({
   query: z.string().min(1),
@@ -21,7 +20,6 @@ const SemanticSearchSchema = z.object({
   topK: z.number().min(1).max(50).default(8),
 });
 
-
 export const recipesSearch = onRequest(
   {
     invoker: "private",
@@ -31,13 +29,15 @@ export const recipesSearch = onRequest(
   async (req, res) => {
     try {
       if (req.method !== "POST") {
-        return res.status(405).json({error: "Method not allowed"});
+        res.status(405).json({ error: "Method not allowed" });
+        return;
       }
 
       const groupId = validateGroupId(req);
       const data = SearchRecipesSchema.parse(req.body);
 
-      const query = db.collection("recipes")
+      const query = db
+        .collection("recipes")
         .where("createdByGroupId", "==", groupId)
         .where("isArchived", "==", false);
 
@@ -59,7 +59,7 @@ export const recipesSearch = onRequest(
       // Filter by ingredients if provided
       if (data.ingredients && data.ingredients.length > 0) {
         recipes = recipes.filter((recipe) =>
-          data.ingredients!.some((ingredientId) =>
+          data.ingredients?.some((ingredientId) =>
             recipe.ingredients.some((ri) => ri.ingredientId === ingredientId)
           )
         );
@@ -68,8 +68,10 @@ export const recipesSearch = onRequest(
       // Filter by tags if provided
       if (data.tags && data.tags.length > 0) {
         recipes = recipes.filter((recipe) =>
-          data.tags!.some((tag) =>
-            recipe.tags.some((recipeTag) => recipeTag.toLowerCase().includes(tag.toLowerCase()))
+          data.tags?.some((tag) =>
+            recipe.tags.some((recipeTag) =>
+              recipeTag.toLowerCase().includes(tag.toLowerCase())
+            )
           )
         );
       }
@@ -77,7 +79,7 @@ export const recipesSearch = onRequest(
       // Filter by categories if provided
       if (data.categories && data.categories.length > 0) {
         recipes = recipes.filter((recipe) =>
-          data.categories!.some((category) =>
+          data.categories?.some((category) =>
             recipe.categories.some((recipeCategory) =>
               recipeCategory.toLowerCase().includes(category.toLowerCase())
             )
@@ -106,9 +108,11 @@ export const recipesSearch = onRequest(
         totalFound: recipes.length,
         query: data.query,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error searching recipes:", error);
-      res.status(400).json({error: error.message});
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      res.status(400).json({ error: errorMessage });
     }
   }
 );
@@ -122,7 +126,8 @@ export const recipesSemanticSearch = onRequest(
   async (req, res) => {
     try {
       if (req.method !== "POST") {
-        return res.status(405).json({error: "Method not allowed"});
+        res.status(405).json({ error: "Method not allowed" });
+        return;
       }
 
       const groupId = validateGroupId(req);
@@ -133,7 +138,8 @@ export const recipesSemanticSearch = onRequest(
 
       // Use Firestore vector search for semantic similarity
       // Note: This requires setting up vector index in Firestore
-      const vectorQuery = db.collection("recipes")
+      const vectorQuery = db
+        .collection("recipes")
         .where("createdByGroupId", "==", groupId)
         .where("isArchived", "==", false)
         .findNearest({
@@ -154,9 +160,11 @@ export const recipesSemanticSearch = onRequest(
         query: data.query,
         topK: data.topK,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error in semantic search:", error);
-      res.status(400).json({error: error.message});
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      res.status(400).json({ error: errorMessage });
     }
   }
 );

@@ -1,18 +1,21 @@
 // types.ts
-// Shared models for recipes + ingredients across viewer / functions / MCP servers.
+// Shared models for recipes + ingredients across viewer / functions / MCP
+// servers.
 
 // ----------------------
 // Common / utility types
 // ----------------------
 export type FirestoreTimestamp = { seconds: number; nanoseconds: number };
 
-export type GroupId = string; // Injected into MCP servers via ENV and forwarded in requests
+// Injected into MCP servers via ENV and forwarded in requests
+export type GroupId = string;
 
 export const UNITS = ["g", "kg", "ml", "l", "piece", "free_text"] as const;
 /**
  * Units:
  * - Metric only + "piece"
- * - "free_text" = quantity is expressed in text (quantityText) and unit is visually omitted.
+ * - "free_text" = quantity is expressed in text (quantityText) and unit
+ *   is visually omitted.
  */
 export type Unit = (typeof UNITS)[number];
 
@@ -36,7 +39,7 @@ export interface Ingredient {
   allergens: string[];
 
   /** Optional vector embedding of the ingredient name */
-  embedding?: any; // FieldValue.vector
+  embedding?: unknown; // FieldValue.vector
 
   /** Provenance / audit */
   createdAt: FirestoreTimestamp;
@@ -64,6 +67,7 @@ export interface RecipeIngredient {
   /** Unit enum; "free_text" hides unit and uses quantityText instead */
   unit: Unit;
 
+  // eslint-disable-next-line max-len
   /** Only used when unit === "free_text", e.g., "a pinch", "to taste", "1 large" */
   quantityText?: string;
 
@@ -98,7 +102,8 @@ export interface Recipe {
   name: string;
 
   /**
-   * Keep within reasonable length for a single embedding with gemini-embedding-001.
+   * Keep within reasonable length for a single embedding with
+   * gemini-embedding-001.
    * (Long, but not excessively large.)
    */
   description: string;
@@ -125,7 +130,7 @@ export interface Recipe {
   sourceUrl?: string;
 
   /** Optional vector embedding of (name + description) */
-  embedding?: any; // FieldValue.vector
+  embedding?: unknown; // FieldValue.vector
 
   /** Provenance / audit */
   createdAt: FirestoreTimestamp;
