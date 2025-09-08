@@ -1,6 +1,5 @@
 import { onRequest } from "firebase-functions/v2/https";
 import { z } from "zod";
-import { generateEmbedding } from "./embedding";
 import { Recipe } from "./types";
 import { db, validateGroupId } from "./utils";
 
@@ -10,11 +9,6 @@ const SearchRecipesSchema = z.object({
   tags: z.array(z.string()).optional(),
   categories: z.array(z.string()).optional(),
   limit: z.number().min(1).max(50).default(20),
-});
-
-const SemanticSearchSchema = z.object({
-  query: z.string().min(1),
-  topK: z.number().min(1).max(50).default(8),
 });
 
 export const recipesSearch = onRequest(
@@ -114,54 +108,3 @@ export const recipesSearch = onRequest(
   }
 );
 
-export const recipesSemanticSearch = onRequest(
-  {
-    invoker: "private",
-    memory: "2GiB",
-    timeoutSeconds: 120,
-  },
-  async (req, res) => {
-    try {
-      if (req.method !== "POST") {
-        res.status(405).json({ error: "Method not allowed" });
-        return;
-      }
-
-      const groupId = validateGroupId(req);
-      const data = SemanticSearchSchema.parse(req.body);
-
-      // Generate embedding for the search query
-      const queryEmbedding = await generateEmbedding(data.query);
-
-      // Use Firestore vector search for semantic similarity
-      // Note: This requires setting up vector index in Firestore
-      const vectorQuery = db
-        .collection("recipes")
-        .where("createdByGroupId", "==", groupId)
-        .where("isArchived", "==", false)
-        .findNearest({
-          vectorField: "embedding",
-          queryVector: queryEmbedding,
-          limit: data.topK,
-          distanceMeasure: "COSINE",
-        });
-
-      const snapshot = await vectorQuery.get();
-      const recipes = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as (Recipe & { id: string })[];
-
-      res.json({
-        recipes,
-        query: data.query,
-        topK: data.topK,
-      });
-    } catch (error: unknown) {
-      console.error("Error in semantic search:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error";
-      res.status(400).json({ error: errorMessage });
-    }
-  }
-);

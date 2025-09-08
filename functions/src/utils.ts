@@ -1,18 +1,9 @@
 import * as admin from "firebase-admin";
 import slugify from "slugify";
-import { FieldValue } from "@google-cloud/firestore";
 import { Request } from "firebase-functions/v2/https";
 
 export const db = admin.firestore();
 
-/**
- * Creates a Firestore vector field from number array.
- * @param {number[]} values - The embedding values
- * @return {FieldValue} The vector field value
- */
-export function createEmbeddingField(values: number[]) {
-  return FieldValue.vector(values);
-}
 
 /**
  * Creates a unique slug for a document in the specified collection.

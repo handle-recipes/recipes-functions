@@ -20,4 +20,4 @@ export {
   recipesList,
 } from "./recipes";
 
-export { recipesSearch, recipesSemanticSearch } from "./search";
+export { recipesSearch } from "./search";

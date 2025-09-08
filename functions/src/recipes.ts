@@ -1,7 +1,6 @@
 import { onRequest } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import { z } from "zod";
-import { generateEmbedding } from "./embedding";
 // import {Storage} from "@google-cloud/storage";
 import { Recipe } from "./types";
 import {
@@ -9,7 +8,6 @@ import {
   slugifyUnique,
   validateGroupId,
   setAuditFields,
-  createEmbeddingField,
 } from "./utils";
 
 // const storage = new Storage(); // Unused for now
@@ -37,7 +35,6 @@ const CreateRecipeSchema = z.object({
   tags: z.array(z.string()).default([]),
   categories: z.array(z.string()).default([]),
   sourceUrl: z.string().url().optional(),
-  generateImage: z.boolean().default(false),
 });
 
 const UpdateRecipeSchema = z.object({
@@ -49,31 +46,8 @@ const UpdateRecipeSchema = z.object({
   tags: z.array(z.string()).optional(),
   categories: z.array(z.string()).optional(),
   sourceUrl: z.string().url().optional(),
-  generateImage: z.boolean().default(false),
 });
 
-/**
- * Generates an image for a recipe (placeholder implementation).
- * @param {string} prompt - The image generation prompt
- * @param {string} _recipeId - The recipe ID (unused)
- * @return {Promise<string>} Empty string placeholder
- */
-async function generateImage(
-  prompt: string,
-  _recipeId: string
-): Promise<string> {
-  try {
-    // Note: Image generation requires a different approach with current
-    // Gemini API
-    // For now, return empty string as placeholder until proper image
-    // generation is set up
-    console.log("Image generation requested for:", prompt);
-    return "";
-  } catch (error) {
-    console.error("Error generating image:", error);
-    return "";
-  }
-}
 
 export const recipesCreate = onRequest(
   {
@@ -95,13 +69,6 @@ export const recipesCreate = onRequest(
       const id = docRef.id;
       const slug = await slugifyUnique(data.name, "recipes", groupId);
 
-      const embeddingText = `${data.name} ${data.description}`;
-      const embeddingValues = await generateEmbedding(embeddingText);
-      const embedding = createEmbeddingField(embeddingValues);
-
-      const imageUrl = data.generateImage
-        ? await generateImage(`${data.name}: ${data.description}`, id)
-        : undefined;
 
       const recipe: Omit<Recipe, "id"> = {
         slug,
@@ -112,9 +79,7 @@ export const recipesCreate = onRequest(
         steps: data.steps,
         tags: data.tags,
         categories: data.categories,
-        sourceUrl: data.sourceUrl,
-        imageUrl,
-        embedding,
+        ...(data.sourceUrl && { sourceUrl: data.sourceUrl }),
         createdAt: admin.firestore.Timestamp.now(),
         updatedAt: admin.firestore.Timestamp.now(),
         createdByGroupId: groupId,
@@ -165,22 +130,18 @@ export const recipesUpdate = onRequest(
         return;
       }
 
-      const updates: Partial<Recipe> = { ...data };
+      const updates: Partial<Recipe> = {};
+      
+      // Only include defined values to avoid Firestore undefined errors
+      if (data.name !== undefined) updates.name = data.name;
+      if (data.description !== undefined) updates.description = data.description;
+      if (data.servings !== undefined) updates.servings = data.servings;
+      if (data.ingredients !== undefined) updates.ingredients = data.ingredients;
+      if (data.steps !== undefined) updates.steps = data.steps;
+      if (data.tags !== undefined) updates.tags = data.tags;
+      if (data.categories !== undefined) updates.categories = data.categories;
+      if (data.sourceUrl !== undefined) updates.sourceUrl = data.sourceUrl;
 
-      if (data.name || data.description) {
-        const embeddingText = `${data.name || existingData.name} ${
-          data.description || existingData.description
-        }`;
-        const embeddingValues = await generateEmbedding(embeddingText);
-        updates.embedding = createEmbeddingField(embeddingValues);
-      }
-
-      if (data.generateImage && data.name) {
-        const imagePrompt = `${data.name}: ${
-          data.description || existingData.description
-        }`;
-        updates.imageUrl = await generateImage(imagePrompt, id);
-      }
 
       setAuditFields(updates, groupId, true);
 

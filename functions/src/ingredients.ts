@@ -1,15 +1,8 @@
 import { onRequest } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import { z } from "zod";
-import { generateEmbedding } from "./embedding";
 import { Ingredient } from "./types";
-import {
-  db,
-  slugifyUnique,
-  validateGroupId,
-  setAuditFields,
-  createEmbeddingField,
-} from "./utils";
+import { db, slugifyUnique, validateGroupId, setAuditFields } from "./utils";
 
 const CreateIngredientSchema = z.object({
   name: z.string().min(1),
@@ -42,12 +35,9 @@ export const ingredientsCreate = onRequest(
       const data = CreateIngredientSchema.parse(req.body);
 
       const id = slugifyUnique(data.name, "ingredients", groupId);
-      const embeddingValues = await generateEmbedding(data.name);
-      const embedding = createEmbeddingField(embeddingValues);
 
       const ingredient: Omit<Ingredient, "id"> = {
         ...data,
-        embedding,
         createdAt: admin.firestore.Timestamp.now(),
         updatedAt: admin.firestore.Timestamp.now(),
         createdByGroupId: groupId,
@@ -103,11 +93,6 @@ export const ingredientsUpdate = onRequest(
       }
 
       const updates: Partial<Ingredient> = { ...data };
-
-      if (data.name) {
-        const embeddingValues = await generateEmbedding(data.name);
-        updates.embedding = createEmbeddingField(embeddingValues);
-      }
 
       setAuditFields(updates, groupId, true);
 

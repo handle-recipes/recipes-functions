@@ -21,7 +21,7 @@ All endpoints require:
 ### Create Ingredient
 **Endpoint**: `POST /ingredientsCreate`
 
-Creates a new ingredient with automatic embedding generation and unique ID based on normalized name.
+Creates a new ingredient with unique ID based on normalized name.
 
 **Request Body**:
 ```typescript
@@ -33,17 +33,16 @@ Creates a new ingredient with automatic embedding generation and unique ID based
 }
 ```
 
-**Response**: Created ingredient object with generated `id`, `embedding`, and audit fields.
+**Response**: Created ingredient object with generated `id` and audit fields.
 
 **Features**:
 - Generates unique ID from normalized name
-- Creates embedding for semantic search
 - Sets audit fields automatically
 
 ### Update Ingredient
 **Endpoint**: `PUT /ingredientsUpdate/{id}`
 
-Updates an existing ingredient by ID. Re-generates embedding if name changes.
+Updates an existing ingredient by ID.
 
 **Request Body**: Same as create, but all fields optional
 **Response**: Updated ingredient object
@@ -87,7 +86,7 @@ Lists all non-archived ingredients for the group.
 ### Create Recipe
 **Endpoint**: `POST /recipesCreate`
 
-Creates a new recipe with automatic slug generation, embedding, and optional hero image generation.
+Creates a new recipe with automatic slug generation.
 
 **Request Body**:
 ```typescript
@@ -100,7 +99,6 @@ Creates a new recipe with automatic slug generation, embedding, and optional her
   tags?: string[];                 // Optional: Free-text tags
   categories?: string[];           // Optional: Categories
   sourceUrl?: string;              // Optional: Source URL
-  generateImage?: boolean;         // Optional: Generate hero image (default: false)
 }
 ```
 
@@ -124,26 +122,21 @@ Creates a new recipe with automatic slug generation, embedding, and optional her
 }
 ```
 
-**Response**: Created recipe with generated `id`, `slug`, `embedding`, and optional `imageUrl`.
+**Response**: Created recipe with generated `id`, `slug`, and audit fields.
 
 **Features**:
 - Generates unique kebab-case slug
-- Creates embedding from name + description
-- Optional AI-generated hero image
 - Sets audit fields automatically
 
 ### Update Recipe
 **Endpoint**: `PUT /recipesUpdate/{id}`
 
-Updates an existing recipe. Re-generates embedding if name/description changes.
+Updates an existing recipe.
 
 **Request Body**: Same as create, but all fields optional
 **Response**: Updated recipe object
 **Access Control**: Only creator group can update
 
-**Special Behavior**:
-- Re-embeds if `name` or `description` changes
-- Generates new image only if `generateImage: true` and `name` provided
 
 ### Delete Recipe
 **Endpoint**: `DELETE /recipesDelete/{id}`
@@ -211,32 +204,6 @@ Performs keyword-based search on recipes with optional filtering.
 - Additional filtering by ingredients, tags, categories
 - Results sorted by relevance score
 
-### Semantic Search
-**Endpoint**: `POST /recipesSemanticSearch`
-
-Performs vector-based semantic search using AI embeddings.
-
-**Request Body**:
-```typescript
-{
-  query: string;      // Required: Natural language search query
-  topK?: number;      // Optional: Max results (1-50, default: 8)
-}
-```
-
-**Response**:
-```typescript
-{
-  recipes: Recipe[];
-  query: string;
-  topK: number;
-}
-```
-
-**Features**:
-- Uses `gemini-embedding-001` for query embedding
-- Cosine similarity search against recipe embeddings
-- Requires Firestore vector index on `recipes.embedding`
 
 ## Error Handling
 
@@ -266,15 +233,9 @@ Import the following types from `types.ts`:
 
 Import request/response types from `apiTypes.ts` for type safety when calling these endpoints.
 
-## Embedding and AI Features
-
-- **Embeddings**: Generated using `gemini-embedding-001` with `taskType: 'SEMANTIC_SIMILARITY'`
-- **Images**: Generated using `gemini-2.5-flash-image-preview` (currently placeholder)
-- **Storage**: Hero images saved to Firebase Storage as `recipes/{recipeId}.png`
 
 ## Implementation Notes
 
 - All write operations enforce audit trails and soft deletion
 - Slugs are kebab-case with numeric suffixes for uniqueness
-- Vector search requires proper Firestore index configuration
-- Functions have appropriate memory and timeout settings for AI operations
+- Functions have appropriate memory and timeout settings

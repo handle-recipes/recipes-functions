@@ -82,7 +82,6 @@ export interface CreateRecipeRequest {
   tags?: string[];
   categories?: string[];
   sourceUrl?: string;
-  generateImage?: boolean;
 }
 
 export interface CreateRecipeResponse extends Recipe {
@@ -98,7 +97,6 @@ export interface UpdateRecipeRequest {
   tags?: string[];
   categories?: string[];
   sourceUrl?: string;
-  generateImage?: boolean;
 }
 
 export interface UpdateRecipeResponse extends Recipe {
@@ -136,16 +134,6 @@ export interface SearchRecipesResponse {
   query: string;
 }
 
-export interface SemanticSearchRequest {
-  query: string;
-  topK?: number;
-}
-
-export interface SemanticSearchResponse {
-  recipes: (Recipe & { id: string })[];
-  query: string;
-  topK: number;
-}
 
 // ----------------------
 // API Client Types
@@ -239,12 +227,6 @@ export interface ApiEndpoints {
     path: "/recipesSearch";
     request: SearchRecipesRequest;
     response: SearchRecipesResponse;
-  };
-  "recipesSemanticSearch": {
-    method: "POST";
-    path: "/recipesSemanticSearch";
-    request: SemanticSearchRequest;
-    response: SemanticSearchResponse;
   };
 }
 
