@@ -6,8 +6,8 @@ This documentation describes the Cloud Functions v2 API endpoints for managing r
 
 - **Authentication**: All endpoints require IAM authentication with Cloud Run Invoker role
 - **Group ID**: All requests must include the `x-group-id` header for multi-tenant support
-- **Base URL**: Functions are deployed to `europe-west3` region
-- **Type References**: Import types from `types.ts` and use `api.ts` for request/response types
+- **Base URL**: `https://europe-west3-bekk-flyt-recipes.cloudfunctions.net`
+- **Type References**: Import types from `types.ts` and use `apiTypes.ts` for request/response types
 
 ## Authentication Requirements
 
@@ -19,7 +19,7 @@ All endpoints require:
 ## Ingredients API
 
 ### Create Ingredient
-**Endpoint**: `POST /ingredients.create`
+**Endpoint**: `POST /ingredientsCreate`
 
 Creates a new ingredient with automatic embedding generation and unique ID based on normalized name.
 
@@ -41,7 +41,7 @@ Creates a new ingredient with automatic embedding generation and unique ID based
 - Sets audit fields automatically
 
 ### Update Ingredient
-**Endpoint**: `PUT /ingredients.update/{id}`
+**Endpoint**: `PUT /ingredientsUpdate/{id}`
 
 Updates an existing ingredient by ID. Re-generates embedding if name changes.
 
@@ -50,7 +50,7 @@ Updates an existing ingredient by ID. Re-generates embedding if name changes.
 **Access Control**: Only creator group can update
 
 ### Delete Ingredient
-**Endpoint**: `DELETE /ingredients.delete/{id}`
+**Endpoint**: `DELETE /ingredientsDelete/{id}`
 
 Soft-deletes an ingredient (sets `isArchived: true`).
 
@@ -58,7 +58,7 @@ Soft-deletes an ingredient (sets `isArchived: true`).
 **Access Control**: Only creator group can delete
 
 ### Get Ingredient
-**Endpoint**: `GET /ingredients.get/{id}`
+**Endpoint**: `GET /ingredientsGet/{id}`
 
 Retrieves a single ingredient by ID.
 
@@ -66,7 +66,7 @@ Retrieves a single ingredient by ID.
 **Access Control**: Only visible to creator group
 
 ### List Ingredients
-**Endpoint**: `GET /ingredients.list`
+**Endpoint**: `GET /ingredientsList`
 
 Lists all non-archived ingredients for the group.
 
@@ -85,7 +85,7 @@ Lists all non-archived ingredients for the group.
 ## Recipes API
 
 ### Create Recipe
-**Endpoint**: `POST /recipes.create`
+**Endpoint**: `POST /recipesCreate`
 
 Creates a new recipe with automatic slug generation, embedding, and optional hero image generation.
 
@@ -133,7 +133,7 @@ Creates a new recipe with automatic slug generation, embedding, and optional her
 - Sets audit fields automatically
 
 ### Update Recipe
-**Endpoint**: `PUT /recipes.update/{id}`
+**Endpoint**: `PUT /recipesUpdate/{id}`
 
 Updates an existing recipe. Re-generates embedding if name/description changes.
 
@@ -146,7 +146,7 @@ Updates an existing recipe. Re-generates embedding if name/description changes.
 - Generates new image only if `generateImage: true` and `name` provided
 
 ### Delete Recipe
-**Endpoint**: `DELETE /recipes.delete/{id}`
+**Endpoint**: `DELETE /recipesDelete/{id}`
 
 Soft-deletes a recipe (sets `isArchived: true`).
 
@@ -154,7 +154,7 @@ Soft-deletes a recipe (sets `isArchived: true`).
 **Access Control**: Only creator group can delete
 
 ### Get Recipe
-**Endpoint**: `GET /recipes.get/{id}`
+**Endpoint**: `GET /recipesGet/{id}`
 
 Retrieves a single recipe by ID.
 
@@ -162,7 +162,7 @@ Retrieves a single recipe by ID.
 **Access Control**: Only visible to creator group
 
 ### List Recipes
-**Endpoint**: `GET /recipes.list`
+**Endpoint**: `GET /recipesList`
 
 Lists all non-archived recipes for the group, ordered by `updatedAt` descending.
 
@@ -181,7 +181,7 @@ Lists all non-archived recipes for the group, ordered by `updatedAt` descending.
 ## Search API
 
 ### Keyword Search
-**Endpoint**: `POST /recipes.search`
+**Endpoint**: `POST /recipesSearch`
 
 Performs keyword-based search on recipes with optional filtering.
 
@@ -212,7 +212,7 @@ Performs keyword-based search on recipes with optional filtering.
 - Results sorted by relevance score
 
 ### Semantic Search
-**Endpoint**: `POST /recipes.semanticSearch`
+**Endpoint**: `POST /recipesSemanticSearch`
 
 Performs vector-based semantic search using AI embeddings.
 
@@ -264,7 +264,7 @@ Import the following types from `types.ts`:
 - `Unit`, `UNITS`
 - `FirestoreTimestamp`, `GroupId`
 
-Import request/response types from `api.ts` for type safety when calling these endpoints.
+Import request/response types from `apiTypes.ts` for type safety when calling these endpoints.
 
 ## Embedding and AI Features
 

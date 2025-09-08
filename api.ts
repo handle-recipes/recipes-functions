@@ -168,81 +168,81 @@ export interface ApiConfig {
 
 export interface ApiEndpoints {
   // Ingredients
-  "ingredients.create": {
+  "ingredientsCreate": {
     method: "POST";
-    path: "/ingredients.create";
+    path: "/ingredientsCreate";
     request: CreateIngredientRequest;
     response: CreateIngredientResponse;
   };
-  "ingredients.update": {
+  "ingredientsUpdate": {
     method: "PUT";
-    path: "/ingredients.update/{id}";
+    path: "/ingredientsUpdate/{id}";
     params: { id: string };
     request: UpdateIngredientRequest;
     response: UpdateIngredientResponse;
   };
-  "ingredients.delete": {
+  "ingredientsDelete": {
     method: "DELETE";
-    path: "/ingredients.delete/{id}";
+    path: "/ingredientsDelete/{id}";
     params: { id: string };
     response: DeleteIngredientResponse;
   };
-  "ingredients.get": {
+  "ingredientsGet": {
     method: "GET";
-    path: "/ingredients.get/{id}";
+    path: "/ingredientsGet/{id}";
     params: { id: string };
     response: GetIngredientResponse;
   };
-  "ingredients.list": {
+  "ingredientsList": {
     method: "GET";
-    path: "/ingredients.list";
+    path: "/ingredientsList";
     query?: PaginationParams;
     response: ListIngredientsResponse;
   };
 
   // Recipes
-  "recipes.create": {
+  "recipesCreate": {
     method: "POST";
-    path: "/recipes.create";
+    path: "/recipesCreate";
     request: CreateRecipeRequest;
     response: CreateRecipeResponse;
   };
-  "recipes.update": {
+  "recipesUpdate": {
     method: "PUT";
-    path: "/recipes.update/{id}";
+    path: "/recipesUpdate/{id}";
     params: { id: string };
     request: UpdateRecipeRequest;
     response: UpdateRecipeResponse;
   };
-  "recipes.delete": {
+  "recipesDelete": {
     method: "DELETE";
-    path: "/recipes.delete/{id}";
+    path: "/recipesDelete/{id}";
     params: { id: string };
     response: DeleteRecipeResponse;
   };
-  "recipes.get": {
+  "recipesGet": {
     method: "GET";
-    path: "/recipes.get/{id}";
+    path: "/recipesGet/{id}";
     params: { id: string };
     response: GetRecipeResponse;
   };
-  "recipes.list": {
+  "recipesList": {
     method: "GET";
-    path: "/recipes.list";
+    path: "/recipesList";
     query?: PaginationParams;
     response: ListRecipesResponse;
   };
 
   // Search
-  "recipes.search": {
+  "recipesSearch": {
     method: "POST";
-    path: "/recipes.search";
+    path: "/recipesSearch";
     request: SearchRecipesRequest;
     response: SearchRecipesResponse;
   };
-  "recipes.semanticSearch": {
+  "recipesSemanticSearch": {
     method: "POST";
-    path: "/recipes.semanticSearch";
+    path: "/recipesSemanticSearch";
     request: SemanticSearchRequest;
     response: SemanticSearchResponse;
   };
@@ -315,7 +315,7 @@ export function hasUrlParams<T extends EndpointName>(
  * }
  * 
  * // Usage:
- * const ingredient = await callApi('ingredients.create', {
+ * const ingredient = await callApi('ingredientsCreate', {
  *   name: 'Tomato',
  *   categories: ['vegetable'],
  *   allergens: []
