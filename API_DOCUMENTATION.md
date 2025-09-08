@@ -16,6 +16,53 @@ All endpoints require:
 2. **Group ID Header**: `x-group-id` header containing the group identifier
 3. **Private Invoker**: Functions are marked as "Require authentication"
 
+## Making Requests
+
+All endpoints use **POST** method with data sent in the request body. Here's how to structure your requests:
+
+**Request Headers**:
+```
+Content-Type: application/json
+Authorization: Bearer <ID_TOKEN>
+x-group-id: <GROUP_ID>
+```
+
+**Request Format**:
+```javascript
+// Using fetch
+const response = await fetch('https://europe-west3-bekk-flyt-recipes.cloudfunctions.net/ingredientsCreate', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${idToken}`,
+    'x-group-id': groupId
+  },
+  body: JSON.stringify({
+    name: 'tomato',
+    categories: ['vegetable'],
+    allergens: []
+  })
+});
+
+// Using axios
+const response = await axios.post(
+  'https://europe-west3-bekk-flyt-recipes.cloudfunctions.net/ingredientsCreate',
+  {
+    name: 'tomato',
+    categories: ['vegetable'], 
+    allergens: []
+  },
+  {
+    headers: {
+      'Authorization': `Bearer ${idToken}`,
+      'x-group-id': groupId
+    }
+  }
+);
+```
+
+**Important**: All request data must be sent in the request body as JSON, not as URL parameters or query strings.
+
 ## Ingredients API
 
 ### Create Ingredient
@@ -40,38 +87,63 @@ Creates a new ingredient with unique ID based on normalized name.
 - Sets audit fields automatically
 
 ### Update Ingredient
-**Endpoint**: `PUT /ingredientsUpdate/{id}`
+**Endpoint**: `POST /ingredientsUpdate`
 
 Updates an existing ingredient by ID.
 
-**Request Body**: Same as create, but all fields optional
+**Request Body**:
+```typescript
+{
+  id: string;             // Required: Ingredient ID
+  name?: string;          // Optional: Primary name
+  aliases?: string[];     // Optional: Alternate names/spellings
+  categories?: string[];  // Optional: Categories
+  allergens?: string[];   // Optional: Allergen tags
+}
+```
 **Response**: Updated ingredient object
 **Access Control**: Only creator group can update
 
 ### Delete Ingredient
-**Endpoint**: `DELETE /ingredientsDelete/{id}`
+**Endpoint**: `POST /ingredientsDelete`
 
 Soft-deletes an ingredient (sets `isArchived: true`).
 
+**Request Body**:
+```typescript
+{
+  id: string;  // Required: Ingredient ID
+}
+```
 **Response**: Success message
 **Access Control**: Only creator group can delete
 
 ### Get Ingredient
-**Endpoint**: `GET /ingredientsGet/{id}`
+**Endpoint**: `POST /ingredientsGet`
 
 Retrieves a single ingredient by ID.
 
+**Request Body**:
+```typescript
+{
+  id: string;  // Required: Ingredient ID
+}
+```
 **Response**: Ingredient object or 404 if not found/archived
 **Access Control**: Only visible to creator group
 
 ### List Ingredients
-**Endpoint**: `GET /ingredientsList`
+**Endpoint**: `POST /ingredientsList`
 
 Lists all non-archived ingredients for the group.
 
-**Query Parameters**:
-- `limit` (default: 50): Number of results
-- `offset` (default: 0): Pagination offset
+**Request Body**:
+```typescript
+{
+  limit?: number;   // Optional: Number of results (default: 50)
+  offset?: number;  // Optional: Pagination offset (default: 0)
+}
+```
 
 **Response**:
 ```typescript
@@ -129,39 +201,68 @@ Creates a new recipe with automatic slug generation.
 - Sets audit fields automatically
 
 ### Update Recipe
-**Endpoint**: `PUT /recipesUpdate/{id}`
+**Endpoint**: `POST /recipesUpdate`
 
 Updates an existing recipe.
 
-**Request Body**: Same as create, but all fields optional
+**Request Body**:
+```typescript
+{
+  id: string;                      // Required: Recipe ID
+  name?: string;                   // Optional: Recipe name
+  description?: string;            // Optional: Recipe description
+  servings?: number;               // Optional: Number of servings
+  ingredients?: RecipeIngredient[]; // Optional: Structured ingredients
+  steps?: RecipeStep[];            // Optional: Ordered cooking steps
+  tags?: string[];                 // Optional: Free-text tags
+  categories?: string[];           // Optional: Categories
+  sourceUrl?: string;              // Optional: Source URL
+}
+```
 **Response**: Updated recipe object
 **Access Control**: Only creator group can update
 
 
 ### Delete Recipe
-**Endpoint**: `DELETE /recipesDelete/{id}`
+**Endpoint**: `POST /recipesDelete`
 
 Soft-deletes a recipe (sets `isArchived: true`).
 
+**Request Body**:
+```typescript
+{
+  id: string;  // Required: Recipe ID
+}
+```
 **Response**: Success message
 **Access Control**: Only creator group can delete
 
 ### Get Recipe
-**Endpoint**: `GET /recipesGet/{id}`
+**Endpoint**: `POST /recipesGet`
 
 Retrieves a single recipe by ID.
 
+**Request Body**:
+```typescript
+{
+  id: string;  // Required: Recipe ID
+}
+```
 **Response**: Recipe object or 404 if not found/archived
 **Access Control**: Only visible to creator group
 
 ### List Recipes
-**Endpoint**: `GET /recipesList`
+**Endpoint**: `POST /recipesList`
 
 Lists all non-archived recipes for the group, ordered by `updatedAt` descending.
 
-**Query Parameters**:
-- `limit` (default: 20): Number of results
-- `offset` (default: 0): Pagination offset
+**Request Body**:
+```typescript
+{
+  limit?: number;   // Optional: Number of results (default: 20)
+  offset?: number;  // Optional: Pagination offset (default: 0)
+}
+```
 
 **Response**:
 ```typescript

@@ -12,10 +12,24 @@ const CreateIngredientSchema = z.object({
 });
 
 const UpdateIngredientSchema = z.object({
+  id: z.string().min(1),
   name: z.string().min(1).optional(),
   aliases: z.array(z.string()).optional(),
   categories: z.array(z.string()).optional(),
   allergens: z.array(z.string()).optional(),
+});
+
+const DeleteIngredientSchema = z.object({
+  id: z.string().min(1),
+});
+
+const GetIngredientSchema = z.object({
+  id: z.string().min(1),
+});
+
+const ListIngredientsSchema = z.object({
+  limit: z.number().int().min(1).max(100).default(50),
+  offset: z.number().int().min(0).default(0),
 });
 
 export const ingredientsCreate = onRequest(
@@ -69,14 +83,13 @@ export const ingredientsUpdate = onRequest(
   },
   async (req, res) => {
     try {
-      if (req.method !== "PUT") {
+      if (req.method !== "POST") {
         res.status(405).json({ error: "Method not allowed" });
         return;
       }
 
       const groupId = validateGroupId(req);
-      const { id } = req.params;
-      const data = UpdateIngredientSchema.parse(req.body);
+      const { id, ...data } = UpdateIngredientSchema.parse(req.body);
 
       const docRef = db.collection("ingredients").doc(id);
       const doc = await docRef.get();
@@ -117,13 +130,13 @@ export const ingredientsDelete = onRequest(
   },
   async (req, res) => {
     try {
-      if (req.method !== "DELETE") {
+      if (req.method !== "POST") {
         res.status(405).json({ error: "Method not allowed" });
         return;
       }
 
       const groupId = validateGroupId(req);
-      const { id } = req.params;
+      const { id } = DeleteIngredientSchema.parse(req.body);
 
       const docRef = db.collection("ingredients").doc(id);
       const doc = await docRef.get();
@@ -162,13 +175,13 @@ export const ingredientsGet = onRequest(
   },
   async (req, res) => {
     try {
-      if (req.method !== "GET") {
+      if (req.method !== "POST") {
         res.status(405).json({ error: "Method not allowed" });
         return;
       }
 
       const groupId = validateGroupId(req);
-      const { id } = req.params;
+      const { id } = GetIngredientSchema.parse(req.body);
 
       const doc = await db.collection("ingredients").doc(id).get();
 
@@ -201,28 +214,28 @@ export const ingredientsList = onRequest(
   },
   async (req, res) => {
     try {
-      if (req.method !== "GET") {
+      if (req.method !== "POST") {
         res.status(405).json({ error: "Method not allowed" });
         return;
       }
 
       const groupId = validateGroupId(req);
-      const { limit = "50", offset = "0" } = req.query;
+      const { limit, offset } = ListIngredientsSchema.parse(req.body || {});
 
       const query = db
         .collection("ingredients")
         .where("createdByGroupId", "==", groupId)
         .where("isArchived", "==", false)
         .orderBy("updatedAt", "desc")
-        .limit(parseInt(limit as string));
+        .limit(limit);
 
-      if (parseInt(offset as string) > 0) {
+      if (offset > 0) {
         const offsetDoc = await db
           .collection("ingredients")
           .where("createdByGroupId", "==", groupId)
           .where("isArchived", "==", false)
           .orderBy("updatedAt", "desc")
-          .offset(parseInt(offset as string))
+          .offset(offset)
           .limit(1)
           .get();
 
@@ -239,7 +252,7 @@ export const ingredientsList = onRequest(
 
       res.json({
         ingredients,
-        hasMore: snapshot.size === parseInt(limit as string),
+        hasMore: snapshot.size === limit,
       });
     } catch (error: unknown) {
       console.error("Error listing ingredients:", error);

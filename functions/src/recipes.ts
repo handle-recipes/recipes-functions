@@ -38,6 +38,7 @@ const CreateRecipeSchema = z.object({
 });
 
 const UpdateRecipeSchema = z.object({
+  id: z.string().min(1),
   name: z.string().min(1).optional(),
   description: z.string().optional(),
   servings: z.number().min(1).optional(),
@@ -46,6 +47,19 @@ const UpdateRecipeSchema = z.object({
   tags: z.array(z.string()).optional(),
   categories: z.array(z.string()).optional(),
   sourceUrl: z.string().url().optional(),
+});
+
+const DeleteRecipeSchema = z.object({
+  id: z.string().min(1),
+});
+
+const GetRecipeSchema = z.object({
+  id: z.string().min(1),
+});
+
+const ListRecipesSchema = z.object({
+  limit: z.number().int().min(1).max(100).default(20),
+  offset: z.number().int().min(0).default(0),
 });
 
 
@@ -107,14 +121,13 @@ export const recipesUpdate = onRequest(
   },
   async (req, res) => {
     try {
-      if (req.method !== "PUT") {
+      if (req.method !== "POST") {
         res.status(405).json({ error: "Method not allowed" });
         return;
       }
 
       const groupId = validateGroupId(req);
-      const { id } = req.params;
-      const data = UpdateRecipeSchema.parse(req.body);
+      const { id, ...data } = UpdateRecipeSchema.parse(req.body);
 
       const docRef = db.collection("recipes").doc(id);
       const doc = await docRef.get();
@@ -166,13 +179,13 @@ export const recipesDelete = onRequest(
   },
   async (req, res) => {
     try {
-      if (req.method !== "DELETE") {
+      if (req.method !== "POST") {
         res.status(405).json({ error: "Method not allowed" });
         return;
       }
 
       const groupId = validateGroupId(req);
-      const { id } = req.params;
+      const { id } = DeleteRecipeSchema.parse(req.body);
 
       const docRef = db.collection("recipes").doc(id);
       const doc = await docRef.get();
@@ -211,13 +224,13 @@ export const recipesGet = onRequest(
   },
   async (req, res) => {
     try {
-      if (req.method !== "GET") {
+      if (req.method !== "POST") {
         res.status(405).json({ error: "Method not allowed" });
         return;
       }
 
       const groupId = validateGroupId(req);
-      const { id } = req.params;
+      const { id } = GetRecipeSchema.parse(req.body);
 
       const doc = await db.collection("recipes").doc(id).get();
 
@@ -250,28 +263,28 @@ export const recipesList = onRequest(
   },
   async (req, res) => {
     try {
-      if (req.method !== "GET") {
+      if (req.method !== "POST") {
         res.status(405).json({ error: "Method not allowed" });
         return;
       }
 
       const groupId = validateGroupId(req);
-      const { limit = "20", offset = "0" } = req.query;
+      const { limit, offset } = ListRecipesSchema.parse(req.body || {});
 
       const query = db
         .collection("recipes")
         .where("createdByGroupId", "==", groupId)
         .where("isArchived", "==", false)
         .orderBy("updatedAt", "desc")
-        .limit(parseInt(limit as string));
+        .limit(limit);
 
-      if (parseInt(offset as string) > 0) {
+      if (offset > 0) {
         const offsetDoc = await db
           .collection("recipes")
           .where("createdByGroupId", "==", groupId)
           .where("isArchived", "==", false)
           .orderBy("updatedAt", "desc")
-          .offset(parseInt(offset as string))
+          .offset(offset)
           .limit(1)
           .get();
 
@@ -288,7 +301,7 @@ export const recipesList = onRequest(
 
       res.json({
         recipes,
-        hasMore: snapshot.size === parseInt(limit as string),
+        hasMore: snapshot.size === limit,
       });
     } catch (error: unknown) {
       console.error("Error listing recipes:", error);
