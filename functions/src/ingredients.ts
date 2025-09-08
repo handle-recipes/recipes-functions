@@ -48,24 +48,51 @@ export const ingredientsCreate = onRequest(
       const groupId = validateGroupId(req);
       const data = CreateIngredientSchema.parse(req.body);
 
-      const id = slugifyUnique(data.name, "ingredients", groupId);
-
-      const ingredient: Omit<Ingredient, "id"> = {
-        ...data,
-        createdAt: admin.firestore.Timestamp.now(),
-        updatedAt: admin.firestore.Timestamp.now(),
-        createdByGroupId: groupId,
-        updatedByGroupId: groupId,
-        isArchived: false,
-      };
-
-      await db
+      // Check if a soft-deleted ingredient with the same name exists
+      const normalizedName = data.name.toLowerCase().trim();
+      const existingQuery = await db
         .collection("ingredients")
-        .doc(await id)
-        .set(ingredient);
+        .where("createdByGroupId", "==", groupId)
+        .where("isArchived", "==", true)
+        .get();
+      
+      const existingSoftDeleted = existingQuery.docs.find(doc => {
+        const docData = doc.data() as Ingredient;
+        return docData.name.toLowerCase().trim() === normalizedName;
+      });
 
-      const resolvedId = await id;
-      res.status(201).json({ id: resolvedId, ...ingredient });
+      let id: string;
+      let ingredient: Omit<Ingredient, "id">;
+
+      if (existingSoftDeleted) {
+        // Resurrect the soft-deleted ingredient
+        id = existingSoftDeleted.id;
+        ingredient = {
+          ...data,
+          createdAt: admin.firestore.Timestamp.now(), // Reset as new
+          updatedAt: admin.firestore.Timestamp.now(),
+          createdByGroupId: groupId,
+          updatedByGroupId: groupId,
+          isArchived: false,
+        };
+
+        await db.collection("ingredients").doc(id).set(ingredient);
+      } else {
+        // Create new ingredient
+        id = await slugifyUnique(data.name, "ingredients", groupId);
+        ingredient = {
+          ...data,
+          createdAt: admin.firestore.Timestamp.now(),
+          updatedAt: admin.firestore.Timestamp.now(),
+          createdByGroupId: groupId,
+          updatedByGroupId: groupId,
+          isArchived: false,
+        };
+
+        await db.collection("ingredients").doc(id).set(ingredient);
+      }
+
+      res.status(201).json({ id, ...ingredient });
     } catch (error: unknown) {
       console.error("Error creating ingredient:", error);
       const errorMessage =
@@ -100,8 +127,8 @@ export const ingredientsUpdate = onRequest(
       }
 
       const existingData = doc.data() as Ingredient;
-      if (existingData.createdByGroupId !== groupId) {
-        res.status(403).json({ error: "Access denied" });
+      if (existingData.createdByGroupId !== groupId || existingData.isArchived) {
+        res.status(404).json({ error: "Ingredient not found" });
         return;
       }
 
@@ -147,8 +174,8 @@ export const ingredientsDelete = onRequest(
       }
 
       const existingData = doc.data() as Ingredient;
-      if (existingData.createdByGroupId !== groupId) {
-        res.status(403).json({ error: "Access denied" });
+      if (existingData.createdByGroupId !== groupId || existingData.isArchived) {
+        res.status(404).json({ error: "Ingredient not found" });
         return;
       }
 

@@ -79,29 +79,69 @@ export const recipesCreate = onRequest(
       const groupId = validateGroupId(req);
       const data = CreateRecipeSchema.parse(req.body);
 
-      const docRef = db.collection("recipes").doc();
-      const id = docRef.id;
-      const slug = await slugifyUnique(data.name, "recipes", groupId);
+      // Check if a soft-deleted recipe with the same name exists
+      const normalizedName = data.name.toLowerCase().trim();
+      const existingQuery = await db
+        .collection("recipes")
+        .where("createdByGroupId", "==", groupId)
+        .where("isArchived", "==", true)
+        .get();
+      
+      const existingSoftDeleted = existingQuery.docs.find(doc => {
+        const docData = doc.data() as Recipe;
+        return docData.name.toLowerCase().trim() === normalizedName;
+      });
 
+      let id: string;
+      let slug: string;
+      let recipe: Omit<Recipe, "id">;
 
-      const recipe: Omit<Recipe, "id"> = {
-        slug,
-        name: data.name,
-        description: data.description,
-        servings: data.servings,
-        ingredients: data.ingredients,
-        steps: data.steps,
-        tags: data.tags,
-        categories: data.categories,
-        ...(data.sourceUrl && { sourceUrl: data.sourceUrl }),
-        createdAt: admin.firestore.Timestamp.now(),
-        updatedAt: admin.firestore.Timestamp.now(),
-        createdByGroupId: groupId,
-        updatedByGroupId: groupId,
-        isArchived: false,
-      };
+      if (existingSoftDeleted) {
+        // Resurrect the soft-deleted recipe
+        id = existingSoftDeleted.id;
+        slug = await slugifyUnique(data.name, "recipes", groupId);
+        recipe = {
+          slug,
+          name: data.name,
+          description: data.description,
+          servings: data.servings,
+          ingredients: data.ingredients,
+          steps: data.steps,
+          tags: data.tags,
+          categories: data.categories,
+          ...(data.sourceUrl && { sourceUrl: data.sourceUrl }),
+          createdAt: admin.firestore.Timestamp.now(), // Reset as new
+          updatedAt: admin.firestore.Timestamp.now(),
+          createdByGroupId: groupId,
+          updatedByGroupId: groupId,
+          isArchived: false,
+        };
 
-      await docRef.set(recipe);
+        await db.collection("recipes").doc(id).set(recipe);
+      } else {
+        // Create new recipe
+        const docRef = db.collection("recipes").doc();
+        id = docRef.id;
+        slug = await slugifyUnique(data.name, "recipes", groupId);
+        recipe = {
+          slug,
+          name: data.name,
+          description: data.description,
+          servings: data.servings,
+          ingredients: data.ingredients,
+          steps: data.steps,
+          tags: data.tags,
+          categories: data.categories,
+          ...(data.sourceUrl && { sourceUrl: data.sourceUrl }),
+          createdAt: admin.firestore.Timestamp.now(),
+          updatedAt: admin.firestore.Timestamp.now(),
+          createdByGroupId: groupId,
+          updatedByGroupId: groupId,
+          isArchived: false,
+        };
+
+        await docRef.set(recipe);
+      }
 
       res.status(201).json({ id, ...recipe });
     } catch (error: unknown) {
@@ -138,8 +178,8 @@ export const recipesUpdate = onRequest(
       }
 
       const existingData = doc.data() as Recipe;
-      if (existingData.createdByGroupId !== groupId) {
-        res.status(403).json({ error: "Access denied" });
+      if (existingData.createdByGroupId !== groupId || existingData.isArchived) {
+        res.status(404).json({ error: "Recipe not found" });
         return;
       }
 
@@ -196,8 +236,8 @@ export const recipesDelete = onRequest(
       }
 
       const existingData = doc.data() as Recipe;
-      if (existingData.createdByGroupId !== groupId) {
-        res.status(403).json({ error: "Access denied" });
+      if (existingData.createdByGroupId !== groupId || existingData.isArchived) {
+        res.status(404).json({ error: "Recipe not found" });
         return;
       }
 
