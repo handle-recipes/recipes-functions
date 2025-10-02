@@ -28,7 +28,7 @@ Copy `src/types.ts` in this repo. Fields as agreed (see viewer CLAUDE.md).
   - `POST /recipes.semanticSearch` → `{ query, topK? }`; embed query; **KNN vector search** on `recipes.embedding` (cosine); default `topK=8`.
 
 # Auth & Provenance
-- All **writes require** header `x-group-id` (string); Functions set `createdByGroupId/updatedByGroupId` and timestamps.
+- All **writes require** header `x-group-id` (string); Functions set `createdByGroupId/updatedByGroupId` and ISO timestamps.
 - Functions are **not** public: mark as “Require authentication” and grant **Cloud Run Invoker** to the `mcp-invoker` service account only.
 - Viewer reads Firestore directly under public-read rules; MCP servers call these endpoints with ID tokens minted from `mcp-invoker`.
 

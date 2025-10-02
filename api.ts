@@ -9,7 +9,6 @@ import {
   RecipeStep,
   Unit,
   GroupId,
-  FirestoreTimestamp,
 } from "./functions/src/types";
 
 // ----------------------

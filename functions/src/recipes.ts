@@ -1,5 +1,4 @@
 import { onRequest } from "firebase-functions/v2/https";
-import * as admin from "firebase-admin";
 import { z } from "zod";
 // import {Storage} from "@google-cloud/storage";
 import { Recipe } from "./types";
@@ -110,8 +109,8 @@ export const recipesCreate = onRequest(
           tags: data.tags,
           categories: data.categories,
           ...(data.sourceUrl && { sourceUrl: data.sourceUrl }),
-          createdAt: admin.firestore.Timestamp.now(), // Reset as new
-          updatedAt: admin.firestore.Timestamp.now(),
+          createdAt: new Date().toISOString(), // Reset as new
+          updatedAt: new Date().toISOString(),
           createdByGroupId: groupId,
           updatedByGroupId: groupId,
           isArchived: false,
@@ -133,8 +132,8 @@ export const recipesCreate = onRequest(
           tags: data.tags,
           categories: data.categories,
           ...(data.sourceUrl && { sourceUrl: data.sourceUrl }),
-          createdAt: admin.firestore.Timestamp.now(),
-          updatedAt: admin.firestore.Timestamp.now(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
           createdByGroupId: groupId,
           updatedByGroupId: groupId,
           isArchived: false,

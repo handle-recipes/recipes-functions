@@ -64,7 +64,7 @@ export function setAuditFields(
   groupId: string,
   isUpdate = false
 ) {
-  const now = admin.firestore.Timestamp.now();
+  const now = new Date().toISOString();
 
   if (!isUpdate) {
     doc.createdAt = now;

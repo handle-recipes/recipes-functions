@@ -329,8 +329,7 @@ All endpoints return consistent error responses:
 Import the following types from `types.ts`:
 - `Ingredient`, `IngredientCreate`
 - `Recipe`, `RecipeCreate`, `RecipeIngredient`, `RecipeStep`
-- `Unit`, `UNITS`
-- `FirestoreTimestamp`, `GroupId`
+- `Unit`, `UNITS`, `GroupId`
 
 Import request/response types from `apiTypes.ts` for type safety when calling these endpoints.
 

@@ -1,5 +1,4 @@
 import { onRequest } from "firebase-functions/v2/https";
-import * as admin from "firebase-admin";
 import { z } from "zod";
 import { Ingredient } from "./types";
 import { db, slugifyUnique, validateGroupId, setAuditFields } from "./utils";
@@ -69,8 +68,8 @@ export const ingredientsCreate = onRequest(
         id = existingSoftDeleted.id;
         ingredient = {
           ...data,
-          createdAt: admin.firestore.Timestamp.now(), // Reset as new
-          updatedAt: admin.firestore.Timestamp.now(),
+          createdAt: new Date().toISOString(), // Reset as new
+          updatedAt: new Date().toISOString(),
           createdByGroupId: groupId,
           updatedByGroupId: groupId,
           isArchived: false,
@@ -82,8 +81,8 @@ export const ingredientsCreate = onRequest(
         id = await slugifyUnique(data.name, "ingredients", groupId);
         ingredient = {
           ...data,
-          createdAt: admin.firestore.Timestamp.now(),
-          updatedAt: admin.firestore.Timestamp.now(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
           createdByGroupId: groupId,
           updatedByGroupId: groupId,
           isArchived: false,
