@@ -21,3 +21,10 @@ export {
 } from "./recipes";
 
 export { recipesSearch } from "./search";
+
+export {
+  suggestionsCreate,
+  suggestionsList,
+  suggestionsVote,
+  suggestionsUpdate,
+} from "./suggestions";

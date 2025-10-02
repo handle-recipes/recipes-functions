@@ -173,6 +173,49 @@ export type IngredientCreate = Omit<
   | "isArchived"
 >;
 
+// ----------------------
+// Suggestion
+// ----------------------
+export interface Suggestion {
+  /** Document ID (autoId) */
+  id: string;
+
+  /** Brief title */
+  title: string;
+
+  /** Detailed description */
+  description: string;
+
+  /** Category of suggestion */
+  category: "feature" | "bug" | "improvement" | "other";
+
+  /** Priority level */
+  priority: "low" | "medium" | "high";
+
+  /** Optional: related recipe ID */
+  relatedRecipeId?: string;
+
+  /** Current status */
+  status: "submitted" | "under-review" | "accepted" | "rejected" | "implemented";
+
+  /** Vote count */
+  votes: number;
+
+  /** Groups that have voted */
+  votedByGroups: string[];
+
+  /** Provenance / audit */
+  submittedAt: string;
+  updatedAt: string;
+  submittedByGroupId: GroupId;
+
+  /** Soft delete */
+  isArchived: boolean;
+}
+
+// ----------------------
+// Helpers (optional, lightweight)
+// ----------------------
 // Minimal guards you can use in Functions if desired
 export const isUnit = (u: string): u is Unit =>
   (UNITS as readonly string[]).includes(u);
