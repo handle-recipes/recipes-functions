@@ -6,7 +6,7 @@ This documentation describes the Cloud Functions v2 API endpoints for managing r
 
 - **Authentication**: All endpoints require IAM authentication with Cloud Run Invoker role
 - **Group ID**: All requests must include the `x-group-id` header for multi-tenant support
-- **Base URL**: `https://europe-west3-bekk-flyt-recipes.cloudfunctions.net`
+- **Base URL**: `https://europe-west3-bekk-recipes-mcp.cloudfunctions.net`
 - **Type References**: Import types from `types.ts` and use `apiTypes.ts` for request/response types
 
 ## Authentication Requirements
@@ -30,7 +30,7 @@ x-group-id: <GROUP_ID>
 **Request Format**:
 ```javascript
 // Using fetch
-const response = await fetch('https://europe-west3-bekk-flyt-recipes.cloudfunctions.net/ingredientsCreate', {
+const response = await fetch('https://europe-west3-bekk-recipes-mcp.cloudfunctions.net/ingredientsCreate', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -46,7 +46,7 @@ const response = await fetch('https://europe-west3-bekk-flyt-recipes.cloudfuncti
 
 // Using axios
 const response = await axios.post(
-  'https://europe-west3-bekk-flyt-recipes.cloudfunctions.net/ingredientsCreate',
+  'https://europe-west3-bekk-recipes-mcp.cloudfunctions.net/ingredientsCreate',
   {
     name: 'tomato',
     categories: ['vegetable'], 

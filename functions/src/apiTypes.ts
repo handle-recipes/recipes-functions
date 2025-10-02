@@ -1,15 +1,14 @@
 // api.ts
 // Type definitions for Recipe Functions API requests and responses
-// Import this file alongside types.ts for complete type coverage
+// Import this file alongside apiTypes.ts for complete type coverage
 
 import {
   Ingredient,
   Recipe,
   RecipeIngredient,
   RecipeStep,
-  Unit,
   GroupId,
-} from "./functions/src/types";
+} from "./types";
 
 // ----------------------
 // Common API Types
@@ -18,7 +17,6 @@ import {
 export interface ApiError {
   error: string;
 }
-
 
 export interface PaginatedResponse<T> {
   hasMore: boolean;
@@ -157,14 +155,13 @@ export interface SearchRecipesResponse {
   query: string;
 }
 
-
 // ----------------------
 // API Client Types
 // ----------------------
 
 export interface ApiHeaders {
   "x-group-id": GroupId;
-  "Authorization"?: string;
+  Authorization?: string;
   "Content-Type"?: string;
 }
 
@@ -179,31 +176,31 @@ export interface ApiConfig {
 
 export interface ApiEndpoints {
   // Ingredients
-  "ingredientsCreate": {
+  ingredientsCreate: {
     method: "POST";
     path: "/ingredientsCreate";
     request: CreateIngredientRequest;
     response: CreateIngredientResponse;
   };
-  "ingredientsUpdate": {
+  ingredientsUpdate: {
     method: "POST";
     path: "/ingredientsUpdate";
     request: UpdateIngredientRequest;
     response: UpdateIngredientResponse;
   };
-  "ingredientsDelete": {
+  ingredientsDelete: {
     method: "POST";
     path: "/ingredientsDelete";
     request: DeleteIngredientRequest;
     response: DeleteIngredientResponse;
   };
-  "ingredientsGet": {
+  ingredientsGet: {
     method: "POST";
     path: "/ingredientsGet";
     request: GetIngredientRequest;
     response: GetIngredientResponse;
   };
-  "ingredientsList": {
+  ingredientsList: {
     method: "POST";
     path: "/ingredientsList";
     request?: ListIngredientsRequest;
@@ -211,31 +208,31 @@ export interface ApiEndpoints {
   };
 
   // Recipes
-  "recipesCreate": {
+  recipesCreate: {
     method: "POST";
     path: "/recipesCreate";
     request: CreateRecipeRequest;
     response: CreateRecipeResponse;
   };
-  "recipesUpdate": {
+  recipesUpdate: {
     method: "POST";
     path: "/recipesUpdate";
     request: UpdateRecipeRequest;
     response: UpdateRecipeResponse;
   };
-  "recipesDelete": {
+  recipesDelete: {
     method: "POST";
     path: "/recipesDelete";
     request: DeleteRecipeRequest;
     response: DeleteRecipeResponse;
   };
-  "recipesGet": {
+  recipesGet: {
     method: "POST";
     path: "/recipesGet";
     request: GetRecipeRequest;
     response: GetRecipeResponse;
   };
-  "recipesList": {
+  recipesList: {
     method: "POST";
     path: "/recipesList";
     request?: ListRecipesRequest;
@@ -243,7 +240,7 @@ export interface ApiEndpoints {
   };
 
   // Search
-  "recipesSearch": {
+  recipesSearch: {
     method: "POST";
     path: "/recipesSearch";
     request: SearchRecipesRequest;
@@ -261,22 +258,17 @@ export type EndpointMethod<T extends EndpointName> = ApiEndpoints[T]["method"];
 
 export type EndpointPath<T extends EndpointName> = ApiEndpoints[T]["path"];
 
-export type EndpointRequest<T extends EndpointName> = 
-  "request" extends keyof ApiEndpoints[T] 
-    ? ApiEndpoints[T]["request"]
-    : never;
+export type EndpointRequest<T extends EndpointName> =
+  "request" extends keyof ApiEndpoints[T] ? ApiEndpoints[T]["request"] : never;
 
-export type EndpointResponse<T extends EndpointName> = ApiEndpoints[T]["response"];
+export type EndpointResponse<T extends EndpointName> =
+  ApiEndpoints[T]["response"];
 
-export type EndpointParams<T extends EndpointName> = 
-  "params" extends keyof ApiEndpoints[T] 
-    ? ApiEndpoints[T]["params"]
-    : never;
+export type EndpointParams<T extends EndpointName> =
+  "params" extends keyof ApiEndpoints[T] ? ApiEndpoints[T]["params"] : never;
 
-export type EndpointQuery<T extends EndpointName> = 
-  "query" extends keyof ApiEndpoints[T] 
-    ? ApiEndpoints[T]["query"]
-    : never;
+export type EndpointQuery<T extends EndpointName> =
+  "query" extends keyof ApiEndpoints[T] ? ApiEndpoints[T]["query"] : never;
 
 // ----------------------
 // Type Guards
@@ -306,10 +298,10 @@ export function hasUrlParams<T extends EndpointName>(
 
 /**
  * Example of how to use these types in a client implementation:
- * 
+ *
  * ```typescript
  * import { ApiEndpoints, EndpointRequest, EndpointResponse } from './api';
- * 
+ *
  * async function callApi<T extends keyof ApiEndpoints>(
  *   endpoint: T,
  *   request: EndpointRequest<T>
@@ -325,18 +317,18 @@ export function hasUrlParams<T extends EndpointName>(
  *   });
  *   return response.json();
  * }
- * 
+ *
  * // Usage:
  * const ingredient = await callApi('ingredientsCreate', {
  *   name: 'Tomato',
  *   categories: ['vegetable'],
  *   allergens: []
  * });
- * 
+ *
  * const recipe = await callApi('recipesGet', {
  *   id: 'recipe-123'
  * });
- * 
+ *
  * const updatedIngredient = await callApi('ingredientsUpdate', {
  *   id: 'ingredient-456',
  *   name: 'Roma Tomato'
