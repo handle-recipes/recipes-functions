@@ -9,13 +9,11 @@ export const db = admin.firestore();
  * Creates a unique slug for a document in the specified collection.
  * @param {string} name - The name to slugify
  * @param {"ingredients" | "recipes"} collection - The collection type
- * @param {string} groupId - The group ID for scoping
  * @return {Promise<string>} A unique slug
  */
 export async function slugifyUnique(
   name: string,
-  collection: "ingredients" | "recipes",
-  groupId: string
+  collection: "ingredients" | "recipes"
 ): Promise<string> {
   const baseSlug = slugify(name, { lower: true, strict: true });
   let slug = baseSlug;
@@ -26,7 +24,6 @@ export async function slugifyUnique(
     const existingDoc = await db
       .collection(collection)
       .where("slug", "==", slug)
-      .where("createdByGroupId", "==", groupId)
       .where("isArchived", "==", false)
       .get();
 

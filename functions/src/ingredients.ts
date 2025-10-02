@@ -51,7 +51,6 @@ export const ingredientsCreate = onRequest(
       const normalizedName = data.name.toLowerCase().trim();
       const existingQuery = await db
         .collection("ingredients")
-        .where("createdByGroupId", "==", groupId)
         .where("isArchived", "==", true)
         .get();
       
@@ -78,7 +77,7 @@ export const ingredientsCreate = onRequest(
         await db.collection("ingredients").doc(id).set(ingredient);
       } else {
         // Create new ingredient
-        id = await slugifyUnique(data.name, "ingredients", groupId);
+        id = await slugifyUnique(data.name, "ingredients");
         ingredient = {
           ...data,
           createdAt: new Date().toISOString(),
@@ -126,7 +125,7 @@ export const ingredientsUpdate = onRequest(
       }
 
       const existingData = doc.data() as Ingredient;
-      if (existingData.createdByGroupId !== groupId || existingData.isArchived) {
+      if (existingData.isArchived) {
         res.status(404).json({ error: "Ingredient not found" });
         return;
       }
@@ -173,7 +172,7 @@ export const ingredientsDelete = onRequest(
       }
 
       const existingData = doc.data() as Ingredient;
-      if (existingData.createdByGroupId !== groupId || existingData.isArchived) {
+      if (existingData.isArchived) {
         res.status(404).json({ error: "Ingredient not found" });
         return;
       }
@@ -206,7 +205,7 @@ export const ingredientsGet = onRequest(
         return;
       }
 
-      const groupId = validateGroupId(req);
+      validateGroupId(req);
       const { id } = GetIngredientSchema.parse(req.body);
 
       const doc = await db.collection("ingredients").doc(id).get();
@@ -217,7 +216,7 @@ export const ingredientsGet = onRequest(
       }
 
       const data = doc.data() as Ingredient;
-      if (data.createdByGroupId !== groupId || data.isArchived) {
+      if (data.isArchived) {
         res.status(404).json({ error: "Ingredient not found" });
         return;
       }
@@ -245,12 +244,11 @@ export const ingredientsList = onRequest(
         return;
       }
 
-      const groupId = validateGroupId(req);
+      validateGroupId(req);
       const { limit, offset } = ListIngredientsSchema.parse(req.body || {});
 
       const query = db
         .collection("ingredients")
-        .where("createdByGroupId", "==", groupId)
         .where("isArchived", "==", false)
         .orderBy("updatedAt", "desc")
         .limit(limit);
@@ -258,7 +256,6 @@ export const ingredientsList = onRequest(
       if (offset > 0) {
         const offsetDoc = await db
           .collection("ingredients")
-          .where("createdByGroupId", "==", groupId)
           .where("isArchived", "==", false)
           .orderBy("updatedAt", "desc")
           .offset(offset)

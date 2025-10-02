@@ -24,12 +24,11 @@ export const recipesSearch = onRequest(
         return;
       }
 
-      const groupId = validateGroupId(req);
+      validateGroupId(req);
       const data = SearchRecipesSchema.parse(req.body);
 
       const query = db
         .collection("recipes")
-        .where("createdByGroupId", "==", groupId)
         .where("isArchived", "==", false);
 
       // Text search on name and description

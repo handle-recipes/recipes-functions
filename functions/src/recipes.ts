@@ -82,7 +82,6 @@ export const recipesCreate = onRequest(
       const normalizedName = data.name.toLowerCase().trim();
       const existingQuery = await db
         .collection("recipes")
-        .where("createdByGroupId", "==", groupId)
         .where("isArchived", "==", true)
         .get();
       
@@ -98,7 +97,7 @@ export const recipesCreate = onRequest(
       if (existingSoftDeleted) {
         // Resurrect the soft-deleted recipe
         id = existingSoftDeleted.id;
-        slug = await slugifyUnique(data.name, "recipes", groupId);
+        slug = await slugifyUnique(data.name, "recipes");
         recipe = {
           slug,
           name: data.name,
@@ -121,7 +120,7 @@ export const recipesCreate = onRequest(
         // Create new recipe
         const docRef = db.collection("recipes").doc();
         id = docRef.id;
-        slug = await slugifyUnique(data.name, "recipes", groupId);
+        slug = await slugifyUnique(data.name, "recipes");
         recipe = {
           slug,
           name: data.name,
@@ -177,7 +176,7 @@ export const recipesUpdate = onRequest(
       }
 
       const existingData = doc.data() as Recipe;
-      if (existingData.createdByGroupId !== groupId || existingData.isArchived) {
+      if (existingData.isArchived) {
         res.status(404).json({ error: "Recipe not found" });
         return;
       }
@@ -235,7 +234,7 @@ export const recipesDelete = onRequest(
       }
 
       const existingData = doc.data() as Recipe;
-      if (existingData.createdByGroupId !== groupId || existingData.isArchived) {
+      if (existingData.isArchived) {
         res.status(404).json({ error: "Recipe not found" });
         return;
       }
@@ -268,7 +267,7 @@ export const recipesGet = onRequest(
         return;
       }
 
-      const groupId = validateGroupId(req);
+      validateGroupId(req);
       const { id } = GetRecipeSchema.parse(req.body);
 
       const doc = await db.collection("recipes").doc(id).get();
@@ -279,7 +278,7 @@ export const recipesGet = onRequest(
       }
 
       const data = doc.data() as Recipe;
-      if (data.createdByGroupId !== groupId || data.isArchived) {
+      if (data.isArchived) {
         res.status(404).json({ error: "Recipe not found" });
         return;
       }
@@ -307,12 +306,11 @@ export const recipesList = onRequest(
         return;
       }
 
-      const groupId = validateGroupId(req);
+      validateGroupId(req);
       const { limit, offset } = ListRecipesSchema.parse(req.body || {});
 
       const query = db
         .collection("recipes")
-        .where("createdByGroupId", "==", groupId)
         .where("isArchived", "==", false)
         .orderBy("updatedAt", "desc")
         .limit(limit);
@@ -320,7 +318,6 @@ export const recipesList = onRequest(
       if (offset > 0) {
         const offsetDoc = await db
           .collection("recipes")
-          .where("createdByGroupId", "==", groupId)
           .where("isArchived", "==", false)
           .orderBy("updatedAt", "desc")
           .offset(offset)
