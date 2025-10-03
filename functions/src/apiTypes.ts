@@ -9,6 +9,9 @@ import {
   RecipeStep,
   Suggestion,
   GroupId,
+  NutritionalInfo,
+  UnitConversion,
+  Unit,
 } from "./types";
 
 // ----------------------
@@ -33,6 +36,10 @@ export interface CreateIngredientRequest {
   aliases?: string[];
   categories?: string[];
   allergens?: string[];
+  nutrition?: NutritionalInfo;
+  metadata?: Record<string, string>;
+  supportedUnits?: Unit[];
+  unitConversions?: UnitConversion[];
 }
 
 export interface CreateIngredientResponse extends Ingredient {
@@ -45,6 +52,10 @@ export interface UpdateIngredientRequest {
   aliases?: string[];
   categories?: string[];
   allergens?: string[];
+  nutrition?: NutritionalInfo;
+  metadata?: Record<string, string>;
+  supportedUnits?: Unit[];
+  unitConversions?: UnitConversion[];
 }
 
 export interface UpdateIngredientResponse extends Ingredient {
@@ -194,7 +205,20 @@ export interface VoteSuggestionResponse extends Suggestion {
 
 export interface UpdateSuggestionRequest {
   id: string;
-  status: "submitted" | "under-review" | "accepted" | "rejected" | "implemented";
+  title?: string;
+  description?: string;
+  category?: "feature" | "bug" | "improvement" | "other";
+  priority?: "low" | "medium" | "high";
+  relatedRecipeId?: string;
+  status?: "submitted" | "under-review" | "accepted" | "rejected" | "implemented";
+}
+
+export interface DeleteSuggestionRequest {
+  id: string;
+}
+
+export interface DeleteSuggestionResponse {
+  message: string;
 }
 
 export interface UpdateSuggestionResponse extends Suggestion {
@@ -317,6 +341,12 @@ export interface ApiEndpoints {
     path: "/suggestionsUpdate";
     request: UpdateSuggestionRequest;
     response: UpdateSuggestionResponse;
+  };
+  suggestionsDelete: {
+    method: "POST";
+    path: "/suggestionsDelete";
+    request: DeleteSuggestionRequest;
+    response: DeleteSuggestionResponse;
   };
 }
 

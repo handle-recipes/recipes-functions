@@ -1,13 +1,33 @@
 import { onRequest } from "firebase-functions/v2/https";
 import { z } from "zod";
-import { Ingredient } from "./types";
+import { Ingredient, UNITS } from "./types";
 import { db, slugifyUnique, validateGroupId, setAuditFields } from "./utils";
+
+const NutritionalInfoSchema = z
+  .object({
+    calories: z.number().optional(),
+    protein: z.number().optional(),
+    carbohydrates: z.number().optional(),
+    fat: z.number().optional(),
+    fiber: z.number().optional(),
+  })
+  .optional();
+
+const UnitConversionSchema = z.object({
+  from: z.enum(UNITS),
+  to: z.enum(UNITS),
+  factor: z.number(),
+});
 
 const CreateIngredientSchema = z.object({
   name: z.string().min(1),
   aliases: z.array(z.string()).default([]),
   categories: z.array(z.string()).default([]),
   allergens: z.array(z.string()).default([]),
+  nutrition: NutritionalInfoSchema,
+  metadata: z.record(z.string(), z.string()).optional(),
+  supportedUnits: z.array(z.enum(UNITS)).optional(),
+  unitConversions: z.array(UnitConversionSchema).optional(),
 });
 
 const UpdateIngredientSchema = z.object({
@@ -16,6 +36,10 @@ const UpdateIngredientSchema = z.object({
   aliases: z.array(z.string()).optional(),
   categories: z.array(z.string()).optional(),
   allergens: z.array(z.string()).optional(),
+  nutrition: NutritionalInfoSchema,
+  metadata: z.record(z.string(), z.string()).optional(),
+  supportedUnits: z.array(z.enum(UNITS)).optional(),
+  unitConversions: z.array(UnitConversionSchema).optional(),
 });
 
 const DeleteIngredientSchema = z.object({

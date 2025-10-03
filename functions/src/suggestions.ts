@@ -13,7 +13,16 @@ const CreateSuggestionSchema = z.object({
 
 const UpdateSuggestionSchema = z.object({
   id: z.string().min(1),
-  status: z.enum(["submitted", "under-review", "accepted", "rejected", "implemented"]),
+  title: z.string().min(1).max(200).optional(),
+  description: z.string().min(1).optional(),
+  category: z.enum(["feature", "bug", "improvement", "other"]).optional(),
+  priority: z.enum(["low", "medium", "high"]).optional(),
+  relatedRecipeId: z.string().optional(),
+  status: z.enum(["submitted", "under-review", "accepted", "rejected", "implemented"]).optional(),
+});
+
+const DeleteSuggestionSchema = z.object({
+  id: z.string().min(1),
 });
 
 const VoteSuggestionSchema = z.object({
@@ -214,7 +223,7 @@ export const suggestionsUpdate = onRequest(
       }
 
       const groupId = validateGroupId(req);
-      const { id, status } = UpdateSuggestionSchema.parse(req.body);
+      const { id, ...data } = UpdateSuggestionSchema.parse(req.body);
 
       const docRef = db.collection("suggestions").doc(id);
       const doc = await docRef.get();
@@ -230,7 +239,7 @@ export const suggestionsUpdate = onRequest(
         return;
       }
 
-      const updates: Partial<Suggestion> = { status };
+      const updates: Partial<Suggestion> = { ...data };
       setAuditFields(updates, groupId, true);
 
       await docRef.update(updates);
@@ -239,6 +248,51 @@ export const suggestionsUpdate = onRequest(
       res.json({ id, ...updatedDoc.data() });
     } catch (error: unknown) {
       console.error("Error updating suggestion:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      res.status(400).json({ error: errorMessage });
+    }
+  }
+);
+
+export const suggestionsDelete = onRequest(
+  {
+    invoker: "private",
+    memory: "512MiB",
+    timeoutSeconds: 30,
+  },
+  async (req, res) => {
+    try {
+      if (req.method !== "POST") {
+        res.status(405).json({ error: "Method not allowed" });
+        return;
+      }
+
+      const groupId = validateGroupId(req);
+      const { id } = DeleteSuggestionSchema.parse(req.body);
+
+      const docRef = db.collection("suggestions").doc(id);
+      const doc = await docRef.get();
+
+      if (!doc.exists) {
+        res.status(404).json({ error: "Suggestion not found" });
+        return;
+      }
+
+      const existingData = doc.data() as Suggestion;
+      if (existingData.isArchived) {
+        res.status(404).json({ error: "Suggestion not found" });
+        return;
+      }
+
+      const updates = { isArchived: true };
+      setAuditFields(updates, groupId, true);
+
+      await docRef.update(updates);
+
+      res.json({ message: "Suggestion deleted successfully" });
+    } catch (error: unknown) {
+      console.error("Error deleting suggestion:", error);
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
       res.status(400).json({ error: errorMessage });

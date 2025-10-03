@@ -36,6 +36,31 @@ export type Unit = (typeof UNITS)[number];
 // ----------------------
 // Ingredient
 // ----------------------
+
+/** Unit conversion for ingredient */
+export interface UnitConversion {
+  /** Source unit */
+  from: Unit;
+  /** Target unit */
+  to: Unit;
+  /** Conversion factor (from * factor = to) */
+  factor: number;
+}
+
+/** Core nutritional values per 100g/100ml */
+export interface NutritionalInfo {
+  /** Calories in kcal */
+  calories?: number;
+  /** Protein in grams */
+  protein?: number;
+  /** Carbohydrates in grams */
+  carbohydrates?: number;
+  /** Fat in grams */
+  fat?: number;
+  /** Fiber in grams */
+  fiber?: number;
+}
+
 export interface Ingredient {
   /** Document ID (string based on normalized name; not autoId) */
   id: string;
@@ -52,6 +77,17 @@ export interface Ingredient {
   /** Allergen tags (e.g., "nuts", "gluten", "milk") */
   allergens: string[];
 
+  /** Optional: Core nutritional values per 100g/100ml */
+  nutrition?: NutritionalInfo;
+
+  /** Optional: Additional nutritional metadata (e.g., "saturatedFat": "2.5", "sodium": "150") */
+  metadata?: Record<string, string>;
+
+  /** Optional: Supported unit types for this ingredient */
+  supportedUnits?: Unit[];
+
+  /** Optional: Unit conversion rates */
+  unitConversions?: UnitConversion[];
 
   /** Provenance / audit */
   createdAt: string;

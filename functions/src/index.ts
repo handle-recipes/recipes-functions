@@ -27,4 +27,5 @@ export {
   suggestionsList,
   suggestionsVote,
   suggestionsUpdate,
+  suggestionsDelete,
 } from "./suggestions";
