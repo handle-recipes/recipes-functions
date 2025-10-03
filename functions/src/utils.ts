@@ -72,3 +72,38 @@ export function setAuditFields(
   doc.updatedAt = now;
   doc.updatedByGroupId = groupId;
 }
+
+/**
+ * Checks if the requesting group can edit a document.
+ * @param {any} doc - The document data
+ * @param {string} groupId - The requesting group ID
+ * @return {boolean} True if the group can edit the document
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function canEdit(doc: any, groupId: string): boolean {
+  return doc.createdByGroupId === groupId;
+}
+
+/**
+ * Validates ownership and throws an error if the group cannot edit.
+ * @param {any} doc - The document data
+ * @param {string} groupId - The requesting group ID
+ * @param {string} id - The document ID
+ * @param {string} collection - The collection name
+ * @throws {Error} When the group doesn't own the document
+ */
+export function validateOwnership(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  doc: any,
+  groupId: string,
+  id: string,
+  collection: string
+): void {
+  if (!canEdit(doc, groupId)) {
+    throw new Error(
+      `Access denied: ${collection} '${id}' is owned by group '${doc.createdByGroupId}'. ` +
+      `Your group '${groupId}' cannot modify it. To make changes, create a duplicate ` +
+      `using the ${collection}Duplicate endpoint.`
+    );
+  }
+}

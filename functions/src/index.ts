@@ -10,6 +10,7 @@ export {
   ingredientsDelete,
   ingredientsGet,
   ingredientsList,
+  ingredientsDuplicate,
 } from "./ingredients";
 
 export {
@@ -18,6 +19,7 @@ export {
   recipesDelete,
   recipesGet,
   recipesList,
+  recipesDuplicate,
 } from "./recipes";
 
 export { recipesSearch } from "./search";
@@ -28,4 +30,5 @@ export {
   suggestionsVote,
   suggestionsUpdate,
   suggestionsDelete,
+  suggestionsDuplicate,
 } from "./suggestions";

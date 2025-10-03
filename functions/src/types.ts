@@ -9,7 +9,7 @@
 // Injected into MCP servers via ENV and forwarded in requests
 export type GroupId = string;
 
-export const UNITS = [
+export const UNIT = [
   // Metric weight
   "g", "kg",
   // Metric volume
@@ -31,7 +31,31 @@ export const UNITS = [
  * - "free_text" = quantity is expressed in text (quantityText) and unit
  *   is visually omitted.
  */
-export type Unit = (typeof UNITS)[number];
+export type Unit = (typeof UNIT)[number];
+
+export const SUGGESTION_CATEGORY = [
+  "feature",
+  "bug",
+  "improvement",
+  "other"
+] as const;
+export type SuggestionCategory = (typeof SUGGESTION_CATEGORY)[number];
+
+export const SUGGESTION_PRIORITY = [
+  "low",
+  "medium",
+  "high"
+] as const;
+export type SuggestionPriority = (typeof SUGGESTION_PRIORITY)[number];
+
+export const SUGGESTION_STATUS = [
+  "submitted",
+  "under-review",
+  "accepted",
+  "rejected",
+  "implemented"
+] as const;
+export type SuggestionStatus = (typeof SUGGESTION_STATUS)[number];
 
 // ----------------------
 // Ingredient
@@ -88,6 +112,9 @@ export interface Ingredient {
 
   /** Optional: Unit conversion rates */
   unitConversions?: UnitConversion[];
+
+  /** Optional: ID of the original ingredient if this is a variant/duplicate */
+  variantOf?: string;
 
   /** Provenance / audit */
   createdAt: string;
@@ -171,6 +198,8 @@ export interface Recipe {
   /** Optional source attribution URL */
   sourceUrl?: string;
 
+  /** Optional: ID of the original recipe if this is a variant/duplicate */
+  variantOf?: string;
 
   /** Provenance / audit */
   createdAt: string;
@@ -223,22 +252,25 @@ export interface Suggestion {
   description: string;
 
   /** Category of suggestion */
-  category: "feature" | "bug" | "improvement" | "other";
+  category: SuggestionCategory;
 
   /** Priority level */
-  priority: "low" | "medium" | "high";
+  priority: SuggestionPriority;
 
   /** Optional: related recipe ID */
   relatedRecipeId?: string;
 
   /** Current status */
-  status: "submitted" | "under-review" | "accepted" | "rejected" | "implemented";
+  status: SuggestionStatus;
 
   /** Vote count */
   votes: number;
 
   /** Groups that have voted */
   votedByGroups: string[];
+
+  /** Optional: ID of the original suggestion if this is a variant/duplicate */
+  variantOf?: string;
 
   /** Provenance / audit */
   submittedAt: string;
@@ -254,4 +286,13 @@ export interface Suggestion {
 // ----------------------
 // Minimal guards you can use in Functions if desired
 export const isUnit = (u: string): u is Unit =>
-  (UNITS as readonly string[]).includes(u);
+  (UNIT as readonly string[]).includes(u);
+
+export const isSuggestionCategory = (c: string): c is SuggestionCategory =>
+  (SUGGESTION_CATEGORY as readonly string[]).includes(c);
+
+export const isSuggestionPriority = (p: string): p is SuggestionPriority =>
+  (SUGGESTION_PRIORITY as readonly string[]).includes(p);
+
+export const isSuggestionStatus = (s: string): s is SuggestionStatus =>
+  (SUGGESTION_STATUS as readonly string[]).includes(s);

@@ -1,7 +1,7 @@
 import { onRequest } from "firebase-functions/v2/https";
 import { z } from "zod";
-import { Ingredient, UNITS } from "./types";
-import { db, slugifyUnique, validateGroupId, setAuditFields } from "./utils";
+import { Ingredient, UNIT } from "./types";
+import { db, slugifyUnique, validateGroupId, setAuditFields, validateOwnership, canEdit } from "./utils";
 
 const NutritionalInfoSchema = z
   .object({
@@ -14,8 +14,8 @@ const NutritionalInfoSchema = z
   .optional();
 
 const UnitConversionSchema = z.object({
-  from: z.enum(UNITS),
-  to: z.enum(UNITS),
+  from: z.enum(UNIT),
+  to: z.enum(UNIT),
   factor: z.number(),
 });
 
@@ -26,7 +26,7 @@ const CreateIngredientSchema = z.object({
   allergens: z.array(z.string()).default([]),
   nutrition: NutritionalInfoSchema,
   metadata: z.record(z.string(), z.string()).optional(),
-  supportedUnits: z.array(z.enum(UNITS)).optional(),
+  supportedUnits: z.array(z.enum(UNIT)).optional(),
   unitConversions: z.array(UnitConversionSchema).optional(),
 });
 
@@ -38,7 +38,7 @@ const UpdateIngredientSchema = z.object({
   allergens: z.array(z.string()).optional(),
   nutrition: NutritionalInfoSchema,
   metadata: z.record(z.string(), z.string()).optional(),
-  supportedUnits: z.array(z.enum(UNITS)).optional(),
+  supportedUnits: z.array(z.enum(UNIT)).optional(),
   unitConversions: z.array(UnitConversionSchema).optional(),
 });
 
@@ -53,6 +53,18 @@ const GetIngredientSchema = z.object({
 const ListIngredientsSchema = z.object({
   limit: z.number().int().min(1).max(100).default(50),
   offset: z.number().int().min(0).default(0),
+});
+
+const DuplicateIngredientSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1).optional(),
+  aliases: z.array(z.string()).optional(),
+  categories: z.array(z.string()).optional(),
+  allergens: z.array(z.string()).optional(),
+  nutrition: NutritionalInfoSchema,
+  metadata: z.record(z.string(), z.string()).optional(),
+  supportedUnits: z.array(z.enum(UNIT)).optional(),
+  unitConversions: z.array(UnitConversionSchema).optional(),
 });
 
 export const ingredientsCreate = onRequest(
@@ -133,7 +145,7 @@ export const ingredientsUpdate = onRequest(
   async (req, res) => {
     try {
       if (req.method !== "POST") {
-        res.status(405).json({ error: "Method not allowed" });
+        res.status(405).json({ error: "Method not allowed: Only POST requests are accepted" });
         return;
       }
 
@@ -144,15 +156,18 @@ export const ingredientsUpdate = onRequest(
       const doc = await docRef.get();
 
       if (!doc.exists) {
-        res.status(404).json({ error: "Ingredient not found" });
+        res.status(404).json({ error: `Ingredient not found: No ingredient with ID '${id}' exists` });
         return;
       }
 
       const existingData = doc.data() as Ingredient;
       if (existingData.isArchived) {
-        res.status(404).json({ error: "Ingredient not found" });
+        res.status(404).json({ error: `Ingredient not found: Ingredient '${id}' has been deleted` });
         return;
       }
+
+      // Check ownership
+      validateOwnership(existingData, groupId, id, "ingredients");
 
       const updates: Partial<Ingredient> = { ...data };
 
@@ -180,7 +195,7 @@ export const ingredientsDelete = onRequest(
   async (req, res) => {
     try {
       if (req.method !== "POST") {
-        res.status(405).json({ error: "Method not allowed" });
+        res.status(405).json({ error: "Method not allowed: Only POST requests are accepted" });
         return;
       }
 
@@ -191,15 +206,18 @@ export const ingredientsDelete = onRequest(
       const doc = await docRef.get();
 
       if (!doc.exists) {
-        res.status(404).json({ error: "Ingredient not found" });
+        res.status(404).json({ error: `Ingredient not found: No ingredient with ID '${id}' exists` });
         return;
       }
 
       const existingData = doc.data() as Ingredient;
       if (existingData.isArchived) {
-        res.status(404).json({ error: "Ingredient not found" });
+        res.status(404).json({ error: `Ingredient not found: Ingredient '${id}' has been deleted` });
         return;
       }
+
+      // Check ownership
+      validateOwnership(existingData, groupId, id, "ingredients");
 
       const updates = { isArchived: true };
       setAuditFields(updates, groupId, true);
@@ -225,27 +243,27 @@ export const ingredientsGet = onRequest(
   async (req, res) => {
     try {
       if (req.method !== "POST") {
-        res.status(405).json({ error: "Method not allowed" });
+        res.status(405).json({ error: "Method not allowed: Only POST requests are accepted" });
         return;
       }
 
-      validateGroupId(req);
+      const groupId = validateGroupId(req);
       const { id } = GetIngredientSchema.parse(req.body);
 
       const doc = await db.collection("ingredients").doc(id).get();
 
       if (!doc.exists) {
-        res.status(404).json({ error: "Ingredient not found" });
+        res.status(404).json({ error: `Ingredient not found: No ingredient with ID '${id}' exists` });
         return;
       }
 
       const data = doc.data() as Ingredient;
       if (data.isArchived) {
-        res.status(404).json({ error: "Ingredient not found" });
+        res.status(404).json({ error: `Ingredient not found: Ingredient '${id}' has been deleted` });
         return;
       }
 
-      res.json({ ...data, id: doc.id });
+      res.json({ ...data, id: doc.id, canBeEditedByYou: canEdit(data, groupId) });
     } catch (error: unknown) {
       console.error("Error getting ingredient:", error);
       const errorMessage =
@@ -264,11 +282,11 @@ export const ingredientsList = onRequest(
   async (req, res) => {
     try {
       if (req.method !== "POST") {
-        res.status(405).json({ error: "Method not allowed" });
+        res.status(405).json({ error: "Method not allowed: Only POST requests are accepted" });
         return;
       }
 
-      validateGroupId(req);
+      const groupId = validateGroupId(req);
       const { limit, offset } = ListIngredientsSchema.parse(req.body || {});
 
       const query = db
@@ -292,10 +310,14 @@ export const ingredientsList = onRequest(
       }
 
       const snapshot = await query.get();
-      const ingredients = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+      const ingredients = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          canBeEditedByYou: canEdit(data, groupId),
+        };
+      });
 
       res.json({
         ingredients,
@@ -303,6 +325,70 @@ export const ingredientsList = onRequest(
       });
     } catch (error: unknown) {
       console.error("Error listing ingredients:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      res.status(400).json({ error: errorMessage });
+    }
+  }
+);
+
+export const ingredientsDuplicate = onRequest(
+  {
+    invoker: "private",
+    memory: "1GiB",
+    timeoutSeconds: 60,
+  },
+  async (req, res) => {
+    try {
+      if (req.method !== "POST") {
+        res.status(405).json({ error: "Method not allowed: Only POST requests are accepted" });
+        return;
+      }
+
+      const groupId = validateGroupId(req);
+      const { id, ...overrides } = DuplicateIngredientSchema.parse(req.body);
+
+      // Fetch the original ingredient
+      const docRef = db.collection("ingredients").doc(id);
+      const doc = await docRef.get();
+
+      if (!doc.exists) {
+        res.status(404).json({ error: `Ingredient not found: No ingredient with ID '${id}' exists` });
+        return;
+      }
+
+      const originalData = doc.data() as Ingredient;
+      if (originalData.isArchived) {
+        res.status(404).json({ error: `Ingredient not found: Ingredient '${id}' has been deleted` });
+        return;
+      }
+
+      // Create duplicate with overrides
+      const newName = overrides.name || originalData.name;
+      const newId = await slugifyUnique(newName, "ingredients");
+
+      const duplicateIngredient: Omit<Ingredient, "id"> = {
+        name: newName,
+        aliases: overrides.aliases !== undefined ? overrides.aliases : originalData.aliases,
+        categories: overrides.categories !== undefined ? overrides.categories : originalData.categories,
+        allergens: overrides.allergens !== undefined ? overrides.allergens : originalData.allergens,
+        nutrition: overrides.nutrition !== undefined ? overrides.nutrition : originalData.nutrition,
+        metadata: overrides.metadata !== undefined ? overrides.metadata : originalData.metadata,
+        supportedUnits: overrides.supportedUnits !== undefined ? overrides.supportedUnits : originalData.supportedUnits,
+        unitConversions: overrides.unitConversions !== undefined ? overrides.unitConversions : originalData.unitConversions,
+        variantOf: id,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        createdByGroupId: groupId,
+        updatedByGroupId: groupId,
+        isArchived: false,
+      };
+
+      await db.collection("ingredients").doc(newId).set(duplicateIngredient);
+
+      res.status(201).json({ id: newId, ...duplicateIngredient });
+    } catch (error: unknown) {
+      console.error("Error duplicating ingredient:", error);
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
       res.status(400).json({ error: errorMessage });
