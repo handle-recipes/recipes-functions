@@ -32,3 +32,5 @@ export {
   suggestionsDelete,
   suggestionsDuplicate,
 } from "./suggestions";
+
+export { wipe } from "./wipe";

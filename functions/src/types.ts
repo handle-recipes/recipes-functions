@@ -276,6 +276,9 @@ export interface Suggestion {
   submittedAt: string;
   updatedAt: string;
   submittedByGroupId: GroupId;
+  createdAt: string;
+  createdByGroupId: GroupId;
+  updatedByGroupId: GroupId;
 
   /** Soft delete */
   isArchived: boolean;

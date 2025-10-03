@@ -78,7 +78,7 @@ const DuplicateRecipeSchema = z.object({
 
 export const recipesCreate = onRequest(
   {
-    invoker: "private",
+    invoker: "public",
     memory: "2GiB",
     timeoutSeconds: 300,
   },
@@ -167,7 +167,7 @@ export const recipesCreate = onRequest(
 
 export const recipesUpdate = onRequest(
   {
-    invoker: "private",
+    invoker: "public",
     memory: "2GiB",
     timeoutSeconds: 300,
   },
@@ -228,7 +228,7 @@ export const recipesUpdate = onRequest(
 
 export const recipesDelete = onRequest(
   {
-    invoker: "private",
+    invoker: "public",
     memory: "512MiB",
     timeoutSeconds: 30,
   },
@@ -276,7 +276,7 @@ export const recipesDelete = onRequest(
 
 export const recipesGet = onRequest(
   {
-    invoker: "private",
+    invoker: "public",
     memory: "512MiB",
     timeoutSeconds: 30,
   },
@@ -315,7 +315,7 @@ export const recipesGet = onRequest(
 
 export const recipesList = onRequest(
   {
-    invoker: "private",
+    invoker: "public",
     memory: "1GiB",
     timeoutSeconds: 60,
   },
@@ -374,7 +374,7 @@ export const recipesList = onRequest(
 
 export const recipesDuplicate = onRequest(
   {
-    invoker: "private",
+    invoker: "public",
     memory: "2GiB",
     timeoutSeconds: 300,
   },
@@ -409,7 +409,7 @@ export const recipesDuplicate = onRequest(
       const newId = newDocRef.id;
       const newSlug = await slugifyUnique(newName, "recipes");
 
-      const duplicateRecipe: Omit<Recipe, "id"> = {
+      const baseRecipe: Record<string, unknown> = {
         slug: newSlug,
         name: newName,
         description: overrides.description !== undefined ? overrides.description : originalData.description,
@@ -418,7 +418,6 @@ export const recipesDuplicate = onRequest(
         steps: overrides.steps !== undefined ? overrides.steps : originalData.steps,
         tags: overrides.tags !== undefined ? overrides.tags : originalData.tags,
         categories: overrides.categories !== undefined ? overrides.categories : originalData.categories,
-        ...(overrides.sourceUrl !== undefined ? { sourceUrl: overrides.sourceUrl } : originalData.sourceUrl ? { sourceUrl: originalData.sourceUrl } : {}),
         variantOf: id,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -427,9 +426,13 @@ export const recipesDuplicate = onRequest(
         isArchived: false,
       };
 
-      await newDocRef.set(duplicateRecipe);
+      // Only add sourceUrl if it exists
+      const sourceUrl = overrides.sourceUrl !== undefined ? overrides.sourceUrl : originalData.sourceUrl;
+      if (sourceUrl !== undefined) baseRecipe.sourceUrl = sourceUrl;
 
-      res.status(201).json({ id: newId, ...duplicateRecipe });
+      await newDocRef.set(baseRecipe);
+
+      res.status(201).json({ id: newId, ...baseRecipe });
     } catch (error: unknown) {
       console.error("Error duplicating recipe:", error);
       const errorMessage =

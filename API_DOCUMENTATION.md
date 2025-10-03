@@ -505,6 +505,49 @@ Creates a duplicate of an existing suggestion owned by the requesting group. Thi
 
 **Note**: This is the recommended way to "edit" another group's suggestion. The duplicate will be owned by your group and fully editable.
 
+## Wipe API
+
+### Wipe Database
+**Endpoint**: `POST /wipe`
+
+**DANGER**: Archives (soft-deletes) items in all collections. Behavior depends on requesting group.
+
+**Request Body**:
+```typescript
+{
+  confirm: true  // Required: Must be exactly true
+}
+```
+
+**Response**:
+```typescript
+{
+  message: string;
+  archivedCounts: {
+    ingredients: number;
+    recipes: number;
+    suggestions: number;
+  };
+  totalArchived: number;
+}
+```
+
+**Access Control**:
+- **"seed" group**: Wipes ALL items across all collections
+- **Other groups**: Wipes only items created by the requesting group
+- Requires `confirm: true` in request body
+
+**Behavior**:
+- Sets `isArchived: true` on matching non-archived items
+- Updates `updatedAt` and `updatedByGroupId` fields
+- Processes collections in batches of 500 for safety
+- Does not hard-delete documents (they remain in Firestore)
+- Filters by `createdByGroupId` for non-seed groups
+
+**Use Cases**:
+- **seed group**: Resetting the entire database to a clean state
+- **other groups**: Cleaning up all of your group's test data
+
 
 ## Error Handling
 

@@ -46,7 +46,7 @@ const DuplicateSuggestionSchema = z.object({
 
 export const suggestionsCreate = onRequest(
   {
-    invoker: "private",
+    invoker: "public",
     memory: "512MiB",
     timeoutSeconds: 30,
   },
@@ -75,6 +75,9 @@ export const suggestionsCreate = onRequest(
         submittedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         submittedByGroupId: groupId,
+        createdByGroupId: groupId,
+        updatedByGroupId: groupId,
+        createdAt: new Date().toISOString(),
         isArchived: false,
       };
 
@@ -92,7 +95,7 @@ export const suggestionsCreate = onRequest(
 
 export const suggestionsList = onRequest(
   {
-    invoker: "private",
+    invoker: "public",
     memory: "1GiB",
     timeoutSeconds: 60,
   },
@@ -156,7 +159,7 @@ export const suggestionsList = onRequest(
 
 export const suggestionsVote = onRequest(
   {
-    invoker: "private",
+    invoker: "public",
     memory: "512MiB",
     timeoutSeconds: 30,
   },
@@ -224,7 +227,7 @@ export const suggestionsVote = onRequest(
 
 export const suggestionsUpdate = onRequest(
   {
-    invoker: "private",
+    invoker: "public",
     memory: "512MiB",
     timeoutSeconds: 30,
   },
@@ -273,7 +276,7 @@ export const suggestionsUpdate = onRequest(
 
 export const suggestionsDelete = onRequest(
   {
-    invoker: "private",
+    invoker: "public",
     memory: "512MiB",
     timeoutSeconds: 30,
   },
@@ -321,7 +324,7 @@ export const suggestionsDelete = onRequest(
 
 export const suggestionsDuplicate = onRequest(
   {
-    invoker: "private",
+    invoker: "public",
     memory: "512MiB",
     timeoutSeconds: 30,
   },
@@ -367,6 +370,9 @@ export const suggestionsDuplicate = onRequest(
         submittedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         submittedByGroupId: groupId,
+        createdByGroupId: groupId,
+        updatedByGroupId: groupId,
+        createdAt: new Date().toISOString(),
         isArchived: false,
       };
 

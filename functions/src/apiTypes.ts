@@ -274,6 +274,20 @@ export interface DuplicateSuggestionResponse extends Suggestion {
 }
 
 // ----------------------
+// Wipe API Types
+// ----------------------
+
+export interface WipeRequest {
+  confirm: true;
+}
+
+export interface WipeResponse {
+  message: string;
+  archivedCounts: Record<string, number>;
+  totalArchived: number;
+}
+
+// ----------------------
 // API Client Types
 // ----------------------
 
@@ -413,6 +427,14 @@ export interface ApiEndpoints {
     path: "/suggestionsDuplicate";
     request: DuplicateSuggestionRequest;
     response: DuplicateSuggestionResponse;
+  };
+
+  // Wipe
+  wipe: {
+    method: "POST";
+    path: "/wipe";
+    request: WipeRequest;
+    response: WipeResponse;
   };
 }
 

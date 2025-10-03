@@ -42,6 +42,9 @@ All endpoints use POST method with request body (no query params).
 - `POST /suggestionsDelete` → Soft-deletes suggestion (ownership required)
 - `POST /suggestionsDuplicate` → Creates editable copy of suggestion with optional field overrides
 
+## Admin
+- `POST /wipe` → Archives items (seed wipes all, other groups wipe only their own, requires `confirm: true`)
+
 # Auth & Provenance
 - All **writes require** header `x-group-id` (string); Functions set `createdByGroupId/updatedByGroupId` and ISO timestamps.
 - Functions are **public** (allowing unauthenticated calls) due to consistent issues with IAM authentication. Security is enforced via `x-group-id` validation.
@@ -64,6 +67,7 @@ All endpoints use POST method with request body (no query params).
 - `src/recipes.ts` - Recipe CRUD + duplicate
 - `src/suggestions.ts` - Suggestion CRUD + duplicate + voting
 - `src/search.ts` - Recipe keyword search
+- `src/wipe.ts` - Database wipe (seed group only)
 - `src/utils.ts` - Shared utilities (slugify, validation, ownership checks)
 
 # Scripts

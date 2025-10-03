@@ -69,7 +69,7 @@ const DuplicateIngredientSchema = z.object({
 
 export const ingredientsCreate = onRequest(
   {
-    invoker: "private",
+    invoker: "public",
     memory: "1GiB",
     timeoutSeconds: 60,
   },
@@ -138,7 +138,7 @@ export const ingredientsCreate = onRequest(
 
 export const ingredientsUpdate = onRequest(
   {
-    invoker: "private",
+    invoker: "public",
     memory: "1GiB",
     timeoutSeconds: 60,
   },
@@ -188,7 +188,7 @@ export const ingredientsUpdate = onRequest(
 
 export const ingredientsDelete = onRequest(
   {
-    invoker: "private",
+    invoker: "public",
     memory: "512MiB",
     timeoutSeconds: 30,
   },
@@ -236,7 +236,7 @@ export const ingredientsDelete = onRequest(
 
 export const ingredientsGet = onRequest(
   {
-    invoker: "private",
+    invoker: "public",
     memory: "512MiB",
     timeoutSeconds: 30,
   },
@@ -275,7 +275,7 @@ export const ingredientsGet = onRequest(
 
 export const ingredientsList = onRequest(
   {
-    invoker: "private",
+    invoker: "public",
     memory: "1GiB",
     timeoutSeconds: 60,
   },
@@ -334,7 +334,7 @@ export const ingredientsList = onRequest(
 
 export const ingredientsDuplicate = onRequest(
   {
-    invoker: "private",
+    invoker: "public",
     memory: "1GiB",
     timeoutSeconds: 60,
   },
@@ -367,15 +367,11 @@ export const ingredientsDuplicate = onRequest(
       const newName = overrides.name || originalData.name;
       const newId = await slugifyUnique(newName, "ingredients");
 
-      const duplicateIngredient: Omit<Ingredient, "id"> = {
+      const baseIngredient: Record<string, unknown> = {
         name: newName,
         aliases: overrides.aliases !== undefined ? overrides.aliases : originalData.aliases,
         categories: overrides.categories !== undefined ? overrides.categories : originalData.categories,
         allergens: overrides.allergens !== undefined ? overrides.allergens : originalData.allergens,
-        nutrition: overrides.nutrition !== undefined ? overrides.nutrition : originalData.nutrition,
-        metadata: overrides.metadata !== undefined ? overrides.metadata : originalData.metadata,
-        supportedUnits: overrides.supportedUnits !== undefined ? overrides.supportedUnits : originalData.supportedUnits,
-        unitConversions: overrides.unitConversions !== undefined ? overrides.unitConversions : originalData.unitConversions,
         variantOf: id,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -384,9 +380,22 @@ export const ingredientsDuplicate = onRequest(
         isArchived: false,
       };
 
-      await db.collection("ingredients").doc(newId).set(duplicateIngredient);
+      // Only add optional fields if they exist
+      const nutrition = overrides.nutrition !== undefined ? overrides.nutrition : originalData.nutrition;
+      if (nutrition !== undefined) baseIngredient.nutrition = nutrition;
 
-      res.status(201).json({ id: newId, ...duplicateIngredient });
+      const metadata = overrides.metadata !== undefined ? overrides.metadata : originalData.metadata;
+      if (metadata !== undefined) baseIngredient.metadata = metadata;
+
+      const supportedUnits = overrides.supportedUnits !== undefined ? overrides.supportedUnits : originalData.supportedUnits;
+      if (supportedUnits !== undefined) baseIngredient.supportedUnits = supportedUnits;
+
+      const unitConversions = overrides.unitConversions !== undefined ? overrides.unitConversions : originalData.unitConversions;
+      if (unitConversions !== undefined) baseIngredient.unitConversions = unitConversions;
+
+      await db.collection("ingredients").doc(newId).set(baseIngredient);
+
+      res.status(201).json({ id: newId, ...baseIngredient });
     } catch (error: unknown) {
       console.error("Error duplicating ingredient:", error);
       const errorMessage =

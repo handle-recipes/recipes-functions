@@ -13,7 +13,7 @@ const SearchRecipesSchema = z.object({
 
 export const recipesSearch = onRequest(
   {
-    invoker: "private",
+    invoker: "public",
     memory: "1GiB",
     timeoutSeconds: 60,
   },
