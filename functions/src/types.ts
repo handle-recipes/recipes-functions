@@ -61,27 +61,35 @@ export type SuggestionStatus = (typeof SUGGESTION_STATUS)[number];
 // Ingredient
 // ----------------------
 
-/** Unit conversion for ingredient */
+/**
+ * Unit conversion for ingredient.
+ * Use to convert non-weight units (volume like ml, cup; or pieces) to weight in grams ("g").
+ * Example: 1 cup of flour = 120g → { from: "cup", to: "g", factor: 120 }
+ */
 export interface UnitConversion {
   /** Source unit */
   from: Unit;
-  /** Target unit */
+  /** Target unit (typically "g" for nutritional calculations) */
   to: Unit;
   /** Conversion factor (from * factor = to) */
   factor: number;
 }
 
-/** Core nutritional values per 100g/100ml */
+/**
+ * Core nutritional values per 100g of ingredient.
+ * All values are per 100g regardless of the ingredient's typical serving unit.
+ * Use UnitConversion to convert non-weight units (volume, pieces) to grams for calculations.
+ */
 export interface NutritionalInfo {
-  /** Calories in kcal */
+  /** Calories in kcal per 100g */
   calories?: number;
-  /** Protein in grams */
+  /** Protein in grams per 100g */
   protein?: number;
-  /** Carbohydrates in grams */
+  /** Carbohydrates in grams per 100g */
   carbohydrates?: number;
-  /** Fat in grams */
+  /** Fat in grams per 100g */
   fat?: number;
-  /** Fiber in grams */
+  /** Fiber in grams per 100g */
   fiber?: number;
 }
 
@@ -101,7 +109,7 @@ export interface Ingredient {
   /** Allergen tags (e.g., "nuts", "gluten", "milk") */
   allergens: string[];
 
-  /** Optional: Core nutritional values per 100g/100ml */
+  /** Optional: Core nutritional values per 100g */
   nutrition?: NutritionalInfo;
 
   /** Optional: Additional nutritional metadata (e.g., "saturatedFat": "2.5", "sodium": "150") */
