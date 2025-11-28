@@ -329,7 +329,7 @@ export const recipesList = onRequest(
       const groupId = validateGroupId(req);
       const { limit, offset } = ListRecipesSchema.parse(req.body || {});
 
-      const query = db
+      let query = db
         .collection("recipes")
         .where("isArchived", "==", false)
         .orderBy("updatedAt", "desc")
@@ -345,7 +345,7 @@ export const recipesList = onRequest(
           .get();
 
         if (!offsetDoc.empty) {
-          query.startAfter(offsetDoc.docs[0]);
+          query = query.startAfter(offsetDoc.docs[0]);
         }
       }
 

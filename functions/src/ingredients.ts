@@ -289,7 +289,7 @@ export const ingredientsList = onRequest(
       const groupId = validateGroupId(req);
       const { limit, offset } = ListIngredientsSchema.parse(req.body || {});
 
-      const query = db
+      let query = db
         .collection("ingredients")
         .where("isArchived", "==", false)
         .orderBy("updatedAt", "desc")
@@ -305,7 +305,7 @@ export const ingredientsList = onRequest(
           .get();
 
         if (!offsetDoc.empty) {
-          query.startAfter(offsetDoc.docs[0]);
+          query = query.startAfter(offsetDoc.docs[0]);
         }
       }
 
