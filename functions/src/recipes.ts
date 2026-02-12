@@ -9,6 +9,8 @@ import {
   setAuditFields,
   validateOwnership,
   canEdit,
+  validateArrayOpConflicts,
+  applyStringArrayOps,
 } from "./utils";
 
 // const storage = new Storage(); // Unused for now
@@ -48,7 +50,23 @@ const UpdateRecipeSchema = z.object({
   tags: z.array(z.string()).optional(),
   categories: z.array(z.string()).optional(),
   sourceUrl: z.string().url().optional(),
+  // Array operations
+  addTags: z.array(z.string()).optional(),
+  removeTags: z.array(z.string()).optional(),
+  addCategories: z.array(z.string()).optional(),
+  removeCategories: z.array(z.string()).optional(),
+  addIngredients: z.array(RecipeIngredientSchema).optional(),
+  removeIngredientIds: z.array(z.string()).optional(),
+  addSteps: z.array(RecipeStepSchema).optional(),
+  removeStepIndexes: z.array(z.number().int().min(0)).optional(),
 });
+
+const RECIPE_ARRAY_OP_CONFLICTS = [
+  { field: "tags", addField: "addTags", removeField: "removeTags" },
+  { field: "categories", addField: "addCategories", removeField: "removeCategories" },
+  { field: "ingredients", addField: "addIngredients", removeField: "removeIngredientIds" },
+  { field: "steps", addField: "addSteps", removeField: "removeStepIndexes" },
+];
 
 const DeleteRecipeSchema = z.object({
   id: z.string().min(1),
@@ -179,7 +197,13 @@ export const recipesUpdate = onRequest(
       }
 
       const groupId = validateGroupId(req);
-      const { id, ...data } = UpdateRecipeSchema.parse(req.body);
+      const { id, addTags, removeTags, addCategories, removeCategories, addIngredients, removeIngredientIds, addSteps, removeStepIndexes, ...data } = UpdateRecipeSchema.parse(req.body);
+
+      // Validate no conflicts between full replacement and add/remove
+      validateArrayOpConflicts(
+        req.body as Record<string, unknown>,
+        RECIPE_ARRAY_OP_CONFLICTS
+      );
 
       const docRef = db.collection("recipes").doc(id);
       const doc = await docRef.get();
@@ -210,6 +234,60 @@ export const recipesUpdate = onRequest(
       if (data.categories !== undefined) updates.categories = data.categories;
       if (data.sourceUrl !== undefined) updates.sourceUrl = data.sourceUrl;
 
+      // Apply array operations for string arrays
+      if (addTags !== undefined || removeTags !== undefined) {
+        updates.tags = applyStringArrayOps(existingData.tags || [], addTags, removeTags);
+      }
+      if (addCategories !== undefined || removeCategories !== undefined) {
+        updates.categories = applyStringArrayOps(existingData.categories || [], addCategories, removeCategories);
+      }
+
+      // Apply ingredient array operations (upsert by ingredientId)
+      if (addIngredients !== undefined || removeIngredientIds !== undefined) {
+        let currentIngredients = [...(existingData.ingredients || [])];
+
+        if (removeIngredientIds !== undefined) {
+          const removeSet = new Set(removeIngredientIds);
+          currentIngredients = currentIngredients.filter(
+            (ing) => !removeSet.has(ing.ingredientId)
+          );
+        }
+
+        if (addIngredients !== undefined) {
+          for (const newIng of addIngredients) {
+            const existingIdx = currentIngredients.findIndex(
+              (ing) => ing.ingredientId === newIng.ingredientId
+            );
+            if (existingIdx >= 0) {
+              currentIngredients[existingIdx] = newIng;
+            } else {
+              currentIngredients.push(newIng);
+            }
+          }
+        }
+
+        updates.ingredients = currentIngredients;
+      }
+
+      // Apply step array operations
+      if (removeStepIndexes !== undefined || addSteps !== undefined) {
+        const currentSteps = [...(existingData.steps || [])];
+
+        if (removeStepIndexes !== undefined) {
+          const sortedDesc = [...removeStepIndexes].sort((a, b) => b - a);
+          for (const idx of sortedDesc) {
+            if (idx >= 0 && idx < currentSteps.length) {
+              currentSteps.splice(idx, 1);
+            }
+          }
+        }
+
+        if (addSteps !== undefined) {
+          currentSteps.push(...addSteps);
+        }
+
+        updates.steps = currentSteps;
+      }
 
       setAuditFields(updates, groupId, true);
 

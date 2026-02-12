@@ -1,7 +1,7 @@
 import { onRequest } from "firebase-functions/v2/https";
 import { z } from "zod";
 import { Ingredient, UNIT } from "./types";
-import { db, slugifyUnique, validateGroupId, setAuditFields, validateOwnership, canEdit } from "./utils";
+import { db, slugifyUnique, validateGroupId, setAuditFields, validateOwnership, canEdit, validateArrayOpConflicts, applyStringArrayOps } from "./utils";
 
 const NutritionalInfoSchema = z
   .object({
@@ -40,7 +40,23 @@ const UpdateIngredientSchema = z.object({
   metadata: z.record(z.string(), z.string()).optional(),
   supportedUnits: z.array(z.enum(UNIT)).optional(),
   unitConversions: z.array(UnitConversionSchema).optional(),
+  // Array operations
+  addAliases: z.array(z.string()).optional(),
+  removeAliases: z.array(z.string()).optional(),
+  addCategories: z.array(z.string()).optional(),
+  removeCategories: z.array(z.string()).optional(),
+  addAllergens: z.array(z.string()).optional(),
+  removeAllergens: z.array(z.string()).optional(),
+  addSupportedUnits: z.array(z.enum(UNIT)).optional(),
+  removeSupportedUnits: z.array(z.enum(UNIT)).optional(),
 });
+
+const INGREDIENT_ARRAY_OP_CONFLICTS = [
+  { field: "aliases", addField: "addAliases", removeField: "removeAliases" },
+  { field: "categories", addField: "addCategories", removeField: "removeCategories" },
+  { field: "allergens", addField: "addAllergens", removeField: "removeAllergens" },
+  { field: "supportedUnits", addField: "addSupportedUnits", removeField: "removeSupportedUnits" },
+];
 
 const DeleteIngredientSchema = z.object({
   id: z.string().min(1),
@@ -150,7 +166,13 @@ export const ingredientsUpdate = onRequest(
       }
 
       const groupId = validateGroupId(req);
-      const { id, ...data } = UpdateIngredientSchema.parse(req.body);
+      const { id, addAliases, removeAliases, addCategories, removeCategories, addAllergens, removeAllergens, addSupportedUnits, removeSupportedUnits, ...data } = UpdateIngredientSchema.parse(req.body);
+
+      // Validate no conflicts between full replacement and add/remove
+      validateArrayOpConflicts(
+        req.body as Record<string, unknown>,
+        INGREDIENT_ARRAY_OP_CONFLICTS
+      );
 
       const docRef = db.collection("ingredients").doc(id);
       const doc = await docRef.get();
@@ -170,6 +192,24 @@ export const ingredientsUpdate = onRequest(
       validateOwnership(existingData, groupId, id, "ingredients");
 
       const updates: Partial<Ingredient> = { ...data };
+
+      // Apply array operations
+      if (addAliases !== undefined || removeAliases !== undefined) {
+        updates.aliases = applyStringArrayOps(existingData.aliases || [], addAliases, removeAliases);
+      }
+      if (addCategories !== undefined || removeCategories !== undefined) {
+        updates.categories = applyStringArrayOps(existingData.categories || [], addCategories, removeCategories);
+      }
+      if (addAllergens !== undefined || removeAllergens !== undefined) {
+        updates.allergens = applyStringArrayOps(existingData.allergens || [], addAllergens, removeAllergens);
+      }
+      if (addSupportedUnits !== undefined || removeSupportedUnits !== undefined) {
+        updates.supportedUnits = applyStringArrayOps(
+          (existingData.supportedUnits || []) as string[],
+          addSupportedUnits as string[] | undefined,
+          removeSupportedUnits as string[] | undefined
+        ) as Ingredient["supportedUnits"];
+      }
 
       setAuditFields(updates, groupId, true);
 
